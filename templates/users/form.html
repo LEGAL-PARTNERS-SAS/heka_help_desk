@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}{{ accion }} Usuario{% endblock %}
+{% block page_title %}{{ accion }} Usuario{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{% url 'admin_panel:usuarios' %}" class="btn btn-ghost">← Volver</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;">
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" name="name" class="form-control"
+                        placeholder="Juan" value="{{ usuario.name|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Apellido</label>
+                    <input type="text" name="lastname" class="form-control"
+                        placeholder="Pérez" value="{{ usuario.lastname|default:'' }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                    <label class="form-label">Email *</label>
+                    <input type="email" name="email" class="form-control"
+                        placeholder="juan@empresa.com" value="{{ usuario.email|default:'' }}" required>
+                </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Rol *</label>
+                    <select name="role" class="form-control" required>
+                        <option value="">Seleccionar rol</option>
+                        {% for role in roles %}
+                            <option value="{{ role.roleId }}"
+                                {% if usuario.role.roleId == role.roleId %}selected{% endif %}>
+                                {{ role.roleName }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Área *</label>
+                    <select name="area" class="form-control" required>
+                        <option value="">Seleccionar área</option>
+                        {% for area in areas %}
+                            <option value="{{ area.areaId }}"
+                                {% if usuario.area.areaId == area.areaId %}selected{% endif %}>
+                                {{ area.areaName }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            {% if accion == 'Editar' %}
+            <div class="form-group">
+                <label class="form-label">Estado</label>
+                <select name="status" class="form-control">
+                    <option value="activo"   {% if usuario.status == 'activo' %}selected{% endif %}>Activo</option>
+                    <option value="inactivo" {% if usuario.status == 'inactivo' %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+            {% endif %}
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">{% if accion == 'Editar' %}Nueva contraseña <span style="font-size:.75rem;color:var(--muted);font-weight:400;">(dejar vacío para no cambiar)</span>{% else %}Contraseña *{% endif %}</label>
+                    <input type="password" name="password" class="form-control"
+                        placeholder="••••••••" {% if accion == 'Crear' %}required{% endif %}>
+                </div>
+            </div>
+
+            <!-- Permisos -->
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;">
+                <p style="font-size:.82rem;font-weight:500;color:var(--muted);margin-bottom:12px;letter-spacing:.5px;text-transform:uppercase;">Permisos del sistema</p>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+                        <input type="checkbox" name="is_staff" {% if usuario.is_staff %}checked{% endif %}
+                            style="width:16px;height:16px;accent-color:var(--accent);">
+                        <div>
+                            <strong style="font-size:.9rem;">Agente / Administrador</strong>
+                            <p style="font-size:.78rem;color:var(--muted);">Puede gestionar tickets y acceder al panel de admin.</p>
+                        </div>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+                        <input type="checkbox" name="is_superuser" {% if usuario.is_superuser %}checked{% endif %}
+                            style="width:16px;height:16px;accent-color:var(--danger);">
+                        <div>
+                            <strong style="font-size:.9rem;">Super Administrador</strong>
+                            <p style="font-size:.78rem;color:var(--muted);">Acceso completo al sistema sin restricciones.</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex gap-2" style="justify-content:flex-end;">
+                <a href="{% url 'admin_panel:usuarios' %}" class="btn btn-ghost">Cancelar</a>
+                <button type="submit" class="btn btn-primary">{{ accion }} Usuario</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

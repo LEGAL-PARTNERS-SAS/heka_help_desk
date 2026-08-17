@@ -1,0 +1,23 @@
+# Core Django
+Django==5.0.4
+psycopg[binary]==3.2.13
+
+# Entorno
+django-environ==0.11.2
+
+# JWT
+djangorestframework==3.15.1
+djangorestframework-simplejwt==5.3.1
+PyJWT==2.8.0
+
+# CORS
+django-cors-headers==4.3.1
+
+# Celery + Redis
+celery==5.3.6
+redis==5.0.3
+django-celery-beat==2.6.0
+django-celery-results==2.5.1
+
+# Utilidades
+whitenoise==6.6.0

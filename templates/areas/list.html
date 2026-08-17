@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Áreas{% endblock %}
+{% block page_title %}Áreas{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{% url 'admin_panel:area_create' %}" class="btn btn-primary">+ Nueva Área</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    {% if areas %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre del Área</th>
+                <th>Usuarios</th>
+                <th>Categorías</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for area in areas %}
+            <tr>
+                <td class="text-muted">{{ area.areaId }}</td>
+                <td><strong>{{ area.areaName }}</strong></td>
+                <td><span class="badge badge-blue">{{ area.users.count }}</span></td>
+                <td><span class="badge badge-yellow">{{ area.ticketCategories.count }}</span></td>
+                <td style="text-align:right;">
+                    <a href="{% url 'admin_panel:area_edit' area.areaId %}" class="btn btn-ghost" style="padding:6px 12px;font-size:.82rem;">Editar</a>
+                    <a href="{% url 'admin_panel:area_delete' area.areaId %}" class="btn btn-danger" style="padding:6px 12px;font-size:.82rem;margin-left:6px;">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:60px;color:var(--muted);">
+        <p style="font-size:1.1rem;margin-bottom:24px;">No hay áreas creadas todavía.</p>
+        <a href="{% url 'admin_panel:area_create' %}" class="btn btn-primary">Crear primera área</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

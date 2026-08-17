@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Roles{% endblock %}
+{% block page_title %}Roles{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{% url 'admin_panel:role_create' %}" class="btn btn-primary">+ Nuevo Rol</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    {% if roles %}
+    <table class="table">
+        <thead>
+            <tr><th>#</th><th>Nombre</th><th>Descripción</th><th>Usuarios</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for role in roles %}
+            <tr>
+                <td class="text-muted">{{ role.roleId }}</td>
+                <td><strong>{{ role.roleName }}</strong></td>
+                <td class="text-muted">{{ role.description|default:"—" }}</td>
+                <td><span class="badge badge-blue">{{ role.users.count }}</span></td>
+                <td style="text-align:right;">
+                    <a href="{% url 'admin_panel:role_edit' role.roleId %}" class="btn btn-ghost" style="padding:6px 12px;font-size:.82rem;">Editar</a>
+                    <a href="{% url 'admin_panel:role_delete' role.roleId %}" class="btn btn-danger" style="padding:6px 12px;font-size:.82rem;margin-left:6px;">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:60px;color:var(--muted);">
+        <p style="font-size:1.1rem;margin-bottom:24px;">No hay roles creados todavía.</p>
+        <a href="{% url 'admin_panel:role_create' %}" class="btn btn-primary">Crear primer rol</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

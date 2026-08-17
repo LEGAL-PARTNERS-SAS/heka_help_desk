@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nuevo Ticket
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h2 style="font-family:'Syne',sans-serif; font-size:1.6rem; font-weight:700; margin-bottom:6px;">
+        Bienvenido, {{ request.user.name }} 👋
+    </h2>
+    <p class="text-muted">Aquí tienes un resumen de la actividad del sistema.</p>
+</div>
+
+<div class="stats-grid mb-6">
+    <div class="stat-card">
+        <div class="stat-label">Tickets Abiertos</div>
+        <div class="stat-value warning">{{ stats.abiertos }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">En Proceso</div>
+        <div class="stat-value accent">{{ stats.en_proceso }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Cerrados</div>
+        <div class="stat-value success">{{ stats.cerrados }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total</div>
+        <div class="stat-value" style="color:var(--text)">{{ stats.total }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="flex items-center justify-between mb-4">
+        <h3 style="font-family:'Syne',sans-serif; font-weight:700;">Tickets Recientes</h3>
+        <a href="{% url 'tickets:list' %}" class="btn btn-ghost" style="padding:6px 14px; font-size:0.82rem;">Ver todos</a>
+    </div>
+
+    {% if tickets_recientes %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Título</th>
+                <th>Estado</th>
+                <th>Prioridad</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets_recientes %}
+            <tr style="cursor:pointer;" onclick="window.location='{% url 'tickets:detail' ticket.pk %}'">
+                <td><code style="color:var(--accent2); font-size:0.82rem;">{{ ticket.ticketNumber }}</code></td>
+                <td>{{ ticket.title }}</td>
+                <td>
+                    {% if ticket.status == 'abierto' %}
+                        <span class="badge badge-yellow">Abierto</span>
+                    {% elif ticket.status == 'en_proceso' %}
+                        <span class="badge badge-blue">En Proceso</span>
+                    {% else %}
+                        <span class="badge badge-gray">Cerrado</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if ticket.priority == 'critica' %}
+                        <span class="badge badge-red">Crítica</span>
+                    {% elif ticket.priority == 'alta' %}
+                        <span class="badge badge-yellow">Alta</span>
+                    {% elif ticket.priority == 'media' %}
+                        <span class="badge badge-blue">Media</span>
+                    {% else %}
+                        <span class="badge badge-gray">Baja</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted">{{ ticket.createdAt|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center; padding:40px; color:var(--muted);">
+        <p>No hay tickets aún.</p>
+        <a href="{% url 'tickets:create' %}" class="btn btn-primary" style="margin-top:16px;">Crear primer ticket</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

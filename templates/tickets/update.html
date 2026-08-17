@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar {{ ticket.ticketNumber }}{% endblock %}
+{% block page_title %}Editar Ticket{% endblock %}
+{% block nav_tickets %}active{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{% url 'tickets:detail' ticket.pk %}" class="btn btn-ghost">← Volver</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 680px;">
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Estado</label>
+                    <select name="status" class="form-control">
+                        <option value="abierto"    {% if ticket.status == 'abierto' %}selected{% endif %}>🟡 Abierto</option>
+                        <option value="en_proceso" {% if ticket.status == 'en_proceso' %}selected{% endif %}>🔵 En Proceso</option>
+                        <option value="pendiente"  {% if ticket.status == 'pendiente' %}selected{% endif %}>🟠 Pendiente</option>
+                        <option value="en_espera"  {% if ticket.status == 'en_espera' %}selected{% endif %}>⏸ En Espera</option>
+                        <option value="escalado"   {% if ticket.status == 'escalado' %}selected{% endif %}>🔴 Escalado</option>
+                        <option value="resuelto"   {% if ticket.status == 'resuelto' %}selected{% endif %}>✅ Resuelto</option>
+                        <option value="cerrado"    {% if ticket.status == 'cerrado' %}selected{% endif %}>⚫ Cerrado</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Prioridad</label>
+                    <select name="priority" class="form-control">
+                        <option value="baja"    {% if ticket.priority == 'baja' %}selected{% endif %}>Baja</option>
+                        <option value="media"   {% if ticket.priority == 'media' %}selected{% endif %}>Media</option>
+                        <option value="alta"    {% if ticket.priority == 'alta' %}selected{% endif %}>Alta</option>
+                        <option value="critica" {% if ticket.priority == 'critica' %}selected{% endif %}>Crítica</option>
+                    </select>
+                </div>
+            </div>
+
+            {% if puede_asignar %}
+            <div class="form-group">
+                <label class="form-label">Asignar a agente</label>
+                <select name="assigned_to" class="form-control">
+                    <option value="">Sin asignar</option>
+                    {% for agente in agentes %}
+                        <option value="{{ agente.userId }}"
+                            {% if ticket.assignedTo and ticket.assignedTo.userId == agente.userId %}selected{% endif %}>
+                            {{ agente.name }} {{ agente.lastname }}
+                            <small>({{ agente.role.roleName }})</small>
+                        </option>
+                    {% empty %}
+                        {# El select queda con solo "Sin asignar" si no hay agentes disponibles #}
+                    {% endfor %}
+                </select>
+                {% if not agentes %}
+                <small style="color:var(--muted); font-size:12px; margin-top:4px; display:block;">
+                    No hay agentes activos disponibles para el área {{ ticket.area }}.
+                </small>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label class="form-label">Agregar comentario <span style="color:var(--muted); font-weight:400;">(opcional)</span></label>
+                <textarea name="comment" class="form-control" rows="3"
+                          placeholder="Escribe un comentario sobre este cambio..."
+                          style="resize:vertical;"></textarea>
+            </div>
+
+            <div class="flex gap-2" style="justify-content:flex-end; margin-top:8px;">
+                <a href="{% url 'tickets:detail' ticket.pk %}" class="btn btn-ghost">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

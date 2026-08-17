@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Panel Admin{% endblock %}
+{% block page_title %}Panel de Administración{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <p class="text-muted">Gestiona áreas, roles, categorías y usuarios del sistema.</p>
+</div>
+
+<div class="stats-grid mb-6">
+    <div class="stat-card">
+        <div class="stat-label">Áreas</div>
+        <div class="stat-value accent">{{ total_areas }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Roles</div>
+        <div class="stat-value" style="color:var(--accent2)">{{ total_roles }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Categorías</div>
+        <div class="stat-value warning">{{ total_cats }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Usuarios</div>
+        <div class="stat-value success">{{ total_usuarios }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Agentes / Admins</div>
+        <div class="stat-value danger">{{ agentes }}</div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+
+    <a href="{% url 'admin_panel:areas' %}" style="text-decoration:none;">
+        <div class="card" style="cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:1.8rem;margin-bottom:12px;">🏢</div>
+            <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:6px;">Áreas</h3>
+            <p class="text-muted">Gestionar departamentos y áreas de la empresa.</p>
+        </div>
+    </a>
+
+    <a href="{% url 'admin_panel:roles' %}" style="text-decoration:none;">
+        <div class="card" style="cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:1.8rem;margin-bottom:12px;">🎭</div>
+            <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:6px;">Roles</h3>
+            <p class="text-muted">Definir roles y perfiles de usuario.</p>
+        </div>
+    </a>
+
+    <a href="{% url 'admin_panel:categories' %}" style="text-decoration:none;">
+        <div class="card" style="cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--warning)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:1.8rem;margin-bottom:12px;">🏷️</div>
+            <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:6px;">Categorías</h3>
+            <p class="text-muted">Categorías de tickets por área.</p>
+        </div>
+    </a>
+
+    <a href="{% url 'admin_panel:usuarios' %}" style="text-decoration:none;">
+        <div class="card" style="cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--success)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:1.8rem;margin-bottom:12px;">👥</div>
+            <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:6px;">Usuarios</h3>
+            <p class="text-muted">Crear y gestionar agentes y administradores.</p>
+        </div>
+    </a>
+
+</div>
+{% endblock %}

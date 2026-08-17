@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Gestión de Usuarios{% endblock %}
+{% block page_title %}Gestión de Usuarios{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{% url 'admin_panel:user_create' %}" class="btn btn-primary">+ Nuevo Usuario</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    {% if usuarios %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Área</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in usuarios %}
+            <tr>
+                <td>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div style="width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;color:var(--accent);flex-shrink:0;">
+                            {{ u.name|first|upper }}{{ u.lastname|first|upper }}
+                        </div>
+                        <div>
+                            <strong style="font-size:.9rem;">{{ u.name }} {{ u.lastname }}</strong>
+                            <div style="font-size:.78rem;color:var(--muted);">{{ u.email }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="text-muted">{{ u.email }}</td>
+                <td>{{ u.role }}</td>
+                <td>{{ u.area }}</td>
+                <td>
+                    {% if u.is_superuser %}
+                        <span class="badge badge-red">Superadmin</span>
+                    {% elif u.is_staff %}
+                        <span class="badge badge-yellow">Agente/Admin</span>
+                    {% else %}
+                        <span class="badge badge-gray">Usuario</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if u.status == 'activo' %}
+                        <span class="badge badge-green">Activo</span>
+                    {% else %}
+                        <span class="badge badge-gray">Inactivo</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:right;">
+                    <a href="{% url 'admin_panel:user_edit' u.userId %}" class="btn btn-ghost" style="padding:6px 12px;font-size:.82rem;">Editar</a>
+                    {% if u.userId != request.user.userId %}
+                    <a href="{% url 'admin_panel:user_delete' u.userId %}" class="btn btn-danger" style="padding:6px 12px;font-size:.82rem;margin-left:6px;">Eliminar</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:60px;color:var(--muted);">
+        <p style="font-size:1.1rem;margin-bottom:24px;">No hay usuarios registrados.</p>
+        <a href="{% url 'admin_panel:user_create' %}" class="btn btn-primary">Crear usuario</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

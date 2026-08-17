@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ accion }} Rol{% endblock %}
+{% block page_title %}{{ accion }} Rol{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{% url 'admin_panel:roles' %}" class="btn btn-ghost">← Volver</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;">
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Nombre del Rol *</label>
+                <input type="text" name="role_name" class="form-control"
+                    placeholder="Ej: Administrador, Agente, Usuario..."
+                    value="{{ role.roleName|default:'' }}" autofocus required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descripción</label>
+                <textarea name="description" class="form-control" rows="3"
+                    placeholder="Descripción del rol (opcional)...">{{ role.description|default:'' }}</textarea>
+            </div>
+            <div class="flex gap-2" style="justify-content:flex-end;margin-top:8px;">
+                <a href="{% url 'admin_panel:roles' %}" class="btn btn-ghost">Cancelar</a>
+                <button type="submit" class="btn btn-primary">{{ accion }} Rol</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

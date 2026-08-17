@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% block title %}Tickets{% endblock %}
+{% block page_title %}Tickets{% endblock %}
+{% block nav_tickets %}active{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Nuevo Ticket
+    </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="card panel-card">
+    <div class="panel-header">
+        <div>
+            <div class="card-title">Filtros rápidos</div>
+            <p>Busca tickets por estado, prioridad o área y encuentra lo que necesitas más rápido.</p>
+        </div>
+        <div class="filter-actions">
+            <a href="{% url 'tickets:create' %}" class="btn btn-primary">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Nuevo Ticket
+            </a>
+        </div>
+    </div>
+    <form method="get" class="filter-grid">
+        <div>
+            <label class="form-label">Estado</label>
+            <select name="status" class="form-control">
+                <option value="">Todos</option>
+                <option value="abierto"    {% if status_filter == 'abierto' %}selected{% endif %}>🟡 Abierto</option>
+                <option value="en_proceso" {% if status_filter == 'en_proceso' %}selected{% endif %}>🔵 En Proceso</option>
+                <option value="pendiente"  {% if status_filter == 'pendiente' %}selected{% endif %}>🟠 Pendiente</option>
+                <option value="en_espera"  {% if status_filter == 'en_espera' %}selected{% endif %}>⏸ En Espera</option>
+                <option value="escalado"   {% if status_filter == 'escalado' %}selected{% endif %}>🔴 Escalado</option>
+                <option value="resuelto"   {% if status_filter == 'resuelto' %}selected{% endif %}>✅ Resuelto</option>
+                <option value="cerrado"    {% if status_filter == 'cerrado' %}selected{% endif %}>⚫ Cerrado</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Prioridad</label>
+            <select name="priority" class="form-control">
+                <option value="">Todas</option>
+                <option value="baja"    {% if priority_filter == 'baja' %}selected{% endif %}>Baja</option>
+                <option value="media"   {% if priority_filter == 'media' %}selected{% endif %}>Media</option>
+                <option value="alta"    {% if priority_filter == 'alta' %}selected{% endif %}>Alta</option>
+                <option value="critica" {% if priority_filter == 'critica' %}selected{% endif %}>Crítica</option>
+            </select>
+        </div>
+        {% if areas_disponibles %}
+        <div>
+            <label class="form-label">Área</label>
+            <select name="area" class="form-control">
+                <option value="">Todas</option>
+                {% for area in areas_disponibles %}
+                    <option value="{{ area.areaId }}" {% if area_filter == area.areaId|stringformat:"s" %}selected{% endif %}>
+                        {{ area.areaName }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            {% if status_filter or priority_filter or area_filter %}
+                <a href="{% url 'tickets:list' %}" class="btn btn-ghost">✕ Limpiar</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<div class="card table-card">
+    {% if tickets %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Título</th>
+                <th>Área</th>
+                <th>Estado</th>
+                <th>Prioridad</th>
+                <th>Asignado a</th>
+                <th>Fecha</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+            <tr>
+                <td><code class="ticket-number">{{ ticket.ticketNumber }}</code></td>
+                <td>
+                    <strong>{{ ticket.title }}</strong>
+                    <div class="ticket-subtext">
+                        Por: {% if ticket.createdBy %}{{ ticket.createdBy.fullName|default:ticket.createdBy.email }}{% else %}Usuario desconocido{% endif %}
+                    </div>
+                </td>
+                <td class="text-muted">{{ ticket.area }}</td>
+                <td>
+                    {% if ticket.status == 'abierto' %}
+                        <span class="badge badge-yellow">🟡 Abierto</span>
+                    {% elif ticket.status == 'en_proceso' %}
+                        <span class="badge badge-blue">🔵 En Proceso</span>
+                    {% elif ticket.status == 'pendiente' %}
+                        <span class="badge badge-yellow">🟠 Pendiente</span>
+                    {% elif ticket.status == 'en_espera' %}
+                        <span class="badge badge-gray">⏸ En Espera</span>
+                    {% elif ticket.status == 'escalado' %}
+                        <span class="badge badge-red">🔴 Escalado</span>
+                    {% elif ticket.status == 'resuelto' %}
+                        <span class="badge badge-green">✅ Resuelto</span>
+                    {% else %}
+                        <span class="badge badge-gray">⚫ Cerrado</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if ticket.priority == 'critica' %}
+                        <span class="badge badge-red">Crítica</span>
+                    {% elif ticket.priority == 'alta' %}
+                        <span class="badge badge-yellow">Alta</span>
+                    {% elif ticket.priority == 'media' %}
+                        <span class="badge badge-blue">Media</span>
+                    {% else %}
+                        <span class="badge badge-gray">Baja</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if ticket.assignedTo %}
+                        <span class="user-pill">
+                            <span class="avatar-badge-sm">{{ ticket.assignedTo.name|first|upper }}{{ ticket.assignedTo.lastname|first|upper }}</span>
+                            {{ ticket.assignedTo.name }} {{ ticket.assignedTo.lastname }}
+                        </span>
+                    {% else %}
+                        <span class="ticket-subtext">Sin asignar</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted ticket-subtext text-nowrap">
+                    {{ ticket.createdAt|date:"d/m/Y" }}
+                </td>
+                <td>
+                    <a href="{% url 'tickets:detail' ticket.pk %}"
+                       class="btn btn-ghost btn-ghost-sm">Ver</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="card empty-state">
+        <h2>{% if status_filter or priority_filter or area_filter %}No hay tickets con esos filtros{% else %}No hay tickets todavía{% endif %}</h2>
+            {% if status_filter or priority_filter or area_filter %}
+                No hay tickets con esos filtros
+            {% else %}
+                No hay tickets todavía
+            {% endif %}
+        </p>
+        {% if not status_filter and not priority_filter and not area_filter %}
+        <p>Crea tu primer ticket para comenzar.</p>
+        <a href="{% url 'tickets:create' %}" class="btn btn-primary">Crear Ticket</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

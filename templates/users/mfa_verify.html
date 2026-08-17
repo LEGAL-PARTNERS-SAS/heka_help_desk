@@ -1,0 +1,300 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación — Heka</title>
+
+    <script>
+        (function () {
+            var t = localStorage.getItem('heka-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        }());
+    </script>
+
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        .mfa-box {
+            width: 100%;
+            max-width: 420px;
+            padding: 48px 44px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            position: relative;
+            animation: fadeUp .4s ease;
+            box-shadow: var(--shadow-lg);
+            z-index: 1;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        @media (max-width: 480px) { .mfa-box { padding: 36px 24px; } }
+
+        .mfa-icon {
+            width: 56px; height: 56px;
+            background: var(--accent);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 35%, transparent);
+        }
+        .mfa-icon svg { width: 28px; height: 28px; color: #fff; }
+
+        .mfa-title {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--text);
+            text-align: center;
+            margin-bottom: 6px;
+        }
+        .mfa-subtitle {
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.83rem;
+            color: var(--muted);
+            text-align: center;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+        .mfa-subtitle strong { color: var(--text); }
+
+        /* Inputs de código — 6 cajas individuales */
+        .code-inputs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        .code-inputs input {
+            width: 46px; height: 56px;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            font-family: 'Bricolage Grotesque', sans-serif;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface2, var(--surface));
+            color: var(--text);
+            caret-color: var(--accent);
+            transition: border-color 0.15s, box-shadow 0.15s;
+            outline: none;
+        }
+        .code-inputs input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+        }
+        .code-inputs input.filled { border-color: var(--accent); }
+        .code-inputs input.error  { border-color: var(--danger); }
+
+        /* Contador regresivo */
+        .timer-wrap {
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+        .timer-wrap #timer {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 0.9rem;
+        }
+        .timer-wrap #timer.expired { color: var(--danger); }
+
+        .resend-form { text-align: center; margin-top: 6px; }
+        .resend-btn {
+            background: none; border: none; cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.82rem;
+            color: var(--accent);
+            font-weight: 600;
+            padding: 0;
+            text-decoration: underline;
+            transition: opacity 0.15s;
+        }
+        .resend-btn:disabled { opacity: .4; cursor: default; text-decoration: none; }
+        .resend-btn:not(:disabled):hover { opacity: .75; }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.82rem;
+            color: var(--muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .back-link:hover { color: var(--text); }
+    </style>
+</head>
+<body class="login-page">
+
+<!-- Botón de tema -->
+<button class="login-theme-toggle" id="themeToggle">
+    <svg id="iconDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+    </svg>
+    <svg id="iconLight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    <span id="themeLabel">Modo oscuro</span>
+</button>
+
+<div class="mfa-box">
+    <div class="login-deco"></div>
+
+    <!-- Ícono -->
+    <div class="mfa-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+        </svg>
+    </div>
+
+    <h1 class="mfa-title">Verifica tu identidad</h1>
+    <p class="mfa-subtitle">
+        Enviamos un código de 6 dígitos a<br>
+        <strong>{{ email_masked }}</strong>
+    </p>
+
+    <!-- Mensajes Django -->
+    {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+    {% endfor %}
+
+    {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <!-- Formulario de verificación -->
+    <form id="mfa-form" method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="verificar">
+        <!-- Input oculto que acumula los 6 dígitos -->
+        <input type="hidden" name="code" id="code-hidden">
+
+        <div class="code-inputs" id="code-inputs">
+            <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" class="{% if error %}error{% endif %}">
+            <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" class="{% if error %}error{% endif %}">
+            <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" class="{% if error %}error{% endif %}">
+            <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" class="{% if error %}error{% endif %}">
+            <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" class="{% if error %}error{% endif %}">
+            <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" class="{% if error %}error{% endif %}">
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full" id="submit-btn"
+                style="justify-content:center; padding:13px;
+                       font-family:'Bricolage Grotesque',sans-serif;
+                       font-size:1rem; font-weight:700;" disabled>
+            Verificar
+        </button>
+    </form>
+
+    <!-- Contador y reenvío -->
+    <div class="timer-wrap" style="margin-top:20px;">
+        Código válido por <span id="timer">5:00</span>
+    </div>
+
+    <form class="resend-form" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reenviar">
+        <button type="submit" class="resend-btn" id="resend-btn" disabled>
+            Reenviar código
+        </button>
+    </form>
+
+    <a href="{% url 'users:login' %}" class="back-link">← Volver al inicio de sesión</a>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
+<script>window.jQuery || document.write('<script src="{% static "js/jquery.min.js" %}"><\/script>')</script>
+<script src="{% static 'js/main.js' %}"></script>
+
+<script>
+(function () {
+    // ── Inputs de código ──────────────────────────────────────────────────────
+    const boxes      = Array.from(document.querySelectorAll('#code-inputs input'));
+    const hidden     = document.getElementById('code-hidden');
+    const submitBtn  = document.getElementById('submit-btn');
+    const resendBtn  = document.getElementById('resend-btn');
+
+    function syncHidden() {
+        const val = boxes.map(b => b.value).join('');
+        hidden.value = val;
+        submitBtn.disabled = val.length < 6;
+        boxes.forEach(b => {
+            b.classList.toggle('filled', b.value !== '');
+            b.classList.remove('error');
+        });
+    }
+
+    boxes.forEach((box, i) => {
+        box.addEventListener('input', e => {
+            // Solo dígitos
+            box.value = box.value.replace(/\D/g, '').slice(-1);
+            syncHidden();
+            if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+        });
+
+        box.addEventListener('keydown', e => {
+            if (e.key === 'Backspace' && !box.value && i > 0) {
+                boxes[i - 1].value = '';
+                boxes[i - 1].focus();
+                syncHidden();
+            }
+            if (e.key === 'ArrowLeft'  && i > 0)               boxes[i - 1].focus();
+            if (e.key === 'ArrowRight' && i < boxes.length - 1) boxes[i + 1].focus();
+        });
+
+        // Pegar código completo en cualquier caja
+        box.addEventListener('paste', e => {
+            e.preventDefault();
+            const pasted = (e.clipboardData || window.clipboardData)
+                            .getData('text').replace(/\D/g, '').slice(0, 6);
+            pasted.split('').forEach((ch, j) => {
+                if (boxes[j]) boxes[j].value = ch;
+            });
+            syncHidden();
+            const next = Math.min(pasted.length, boxes.length - 1);
+            boxes[next].focus();
+        });
+    });
+
+    // Foco automático al primer campo
+    boxes[0].focus();
+
+    // ── Countdown 5 min ───────────────────────────────────────────────────────
+    const timerEl  = document.getElementById('timer');
+    let   seconds  = 5 * 60;
+
+    function tick() {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        timerEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+
+        if (seconds <= 0) {
+            timerEl.textContent = 'Expirado';
+            timerEl.classList.add('expired');
+            submitBtn.disabled = true;
+            resendBtn.disabled = false;
+            clearInterval(interval);
+            return;
+        }
+        // Habilitar reenvío a los 30 segundos
+        if (seconds <= 4 * 60 + 30) resendBtn.disabled = false;
+        seconds--;
+    }
+
+    tick();
+    const interval = setInterval(tick, 1000);
+}());
+</script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingresar — Heka</title>
+
+    <!-- Anti-flash -->
+    <script>
+        (function () {
+            var t = localStorage.getItem('heka-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        }());
+    </script>
+
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        .register-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin-top: 18px;
+            text-align: center;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-h));
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 16px 30px rgba(37,141,214,0.18);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .register-btn:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, var(--accent-h), #1a63a4);
+            box-shadow: 0 20px 36px rgba(37,141,214,0.28);
+        }
+        .login-box:hover {
+            transform: translateY(-4px);
+            border-color: rgba(37,141,214,0.18);
+            box-shadow: 0 24px 60px rgba(37,141,214,0.18);
+        }
+        .auth-banner {
+            display: grid;
+            gap: 8px;
+            padding: 16px 18px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            background: rgba(37,141,214,0.08);
+            border: 1px solid rgba(37,141,214,0.2);
+        }
+        .auth-banner strong {
+            font-size: 1rem;
+            display: block;
+            color: var(--text);
+        }
+        .auth-banner p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+        .divider {
+            text-align: center;
+            margin: 20px 0 4px;
+            position: relative;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-family: 'Poppins', sans-serif;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 38%;
+            height: 1px;
+            background: var(--border);
+        }
+        .divider::before { left: 0; }
+        .divider::after  { right: 0; }
+    </style>
+</head>
+<body class="login-page">
+
+<!-- Botón de tema -->
+<button class="login-theme-toggle" id="themeToggle">
+    <svg id="iconDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+    </svg>
+    <svg id="iconLight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    <span id="themeLabel">Modo oscuro</span>
+</button>
+
+<div class="login-box">
+    <div class="login-deco"></div>
+
+    <div class="login-logo-wrap">
+        <img src="{% static 'img/logo_heka.png' %}" alt="Logo Heka">
+        <span class="brand">Heka</span>
+    </div>
+    <p class="login-subtitle">Sistema de gestión de tickets</p>
+    <div class="auth-banner login-help-panel">
+        <p>Ingresa con tu correo y contraseña para ver tus tickets o crear uno nuevo.</p>
+        <button type="button" class="login-info-toggle" id="login-info-toggle">¿Por qué necesito una cuenta?</button>
+    </div>
+    <div id="login-more-info" class="login-more-info">
+        El sistema utiliza tu cuenta para guardar tus solicitudes, asignarlas al área correcta y enviarte notificaciones de seguimiento.
+    </div>
+
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+    <form id="login-form" method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="form-label" for="id_email">Correo electrónico</label>
+            <input class="form-control" type="email" id="id_email"
+                   name="email" placeholder="correo@empresa.com"
+                   required autofocus
+                   data-msg-required="Ingresa tu correo electrónico.">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="id_password">Contraseña</label>
+            <input class="form-control" type="password" id="id_password"
+                   name="password" placeholder="••••••••"
+                   required minlength="6"
+                   data-msg-required="Ingresa tu contraseña."
+                   data-msg-minlength="La contraseña debe tener al menos 6 caracteres.">
+        </div>
+        <button type="submit" class="btn btn-primary w-full"
+                style="justify-content:center; padding:13px;
+                       font-family:'Bricolage Grotesque',sans-serif;
+                       font-size:1rem; font-weight:700; margin-top:8px;">
+            Ingresar
+        </button>
+    </form>
+
+    <div class="divider">¿Eres nuevo?</div>
+    <p style="text-align:center; color:var(--muted); font-size:0.92rem; margin:0 0 10px;">
+        Si todavía no tienes cuenta, créala aquí para comenzar a enviar y gestionar tickets.
+    </p>
+    <a href="{% url 'users:register' %}" class="register-btn">
+        Crear una cuenta
+    </a>
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
+<script>window.jQuery || document.write('<script src="{% static "js/jquery.min.js" %}"><\/script>')</script>
+<script src="{% static 'js/main.js' %}"></script>
+<script>
+    (function () {
+        var btn = document.getElementById('login-info-toggle');
+        var panel = document.getElementById('login-more-info');
+        if (!btn || !panel) return;
+        btn.addEventListener('click', function () {
+            if (panel.style.display === 'block') {
+                panel.style.display = 'none';
+                btn.textContent = '¿Por qué necesito una cuenta?';
+            } else {
+                panel.style.display = 'block';
+                btn.textContent = 'Ocultar explicación';
+            }
+        });
+    }());
+</script>
+</body>
+</html>

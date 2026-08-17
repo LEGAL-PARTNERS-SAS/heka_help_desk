@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}Nuevo Ticket{% endblock %}
+{% block page_title %}Nuevo Ticket{% endblock %}
+{% block nav_create %}active{% endblock %}
+
+{% block content %}
+<div style="max-width: 680px;">
+    <div class="card">
+        <form method="post" id="ticket-form">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="form-label">Título *</label>
+                <input type="text" name="title" class="form-control"
+                       placeholder="Describe brevemente el problema" required
+                       value="{{ request.POST.title }}">
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="form-group">
+                    <div class="label-row">
+                        <label class="form-label">Área *</label>
+                        <div class="help-wrapper">
+                            <span class="help-chip" tabindex="0">i</span>
+                            <div class="help-tooltip">Selecciona el área que deberá recibir y gestionar este ticket.</div>
+                        </div>
+                    </div>
+                    <div class="field-note">Área destinataria del ticket</div>
+                    <select name="area" id="select-area" class="form-control" required>
+                        <option value="">Seleccionar área</option>
+                        {% for area in areas %}
+                            <option value="{{ area.areaId }}"
+                                {% if request.POST.area == area.areaId|stringformat:"s" %}selected{% endif %}>
+                                {{ area.areaName }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-row">
+                        <label class="form-label">Categoría *</label>
+                        <div class="help-wrapper">
+                            <span class="help-chip" tabindex="0">i</span>
+                            <div class="help-tooltip">Elige la categoría que mejor describe tu ticket. Si ninguna aplica, selecciona "Otras".</div>
+                        </div>
+                    </div>
+                    <div class="field-note">Categoría que describe el problema o solicitud.</div>
+                    <select name="category" id="select-category" class="form-control" required disabled>
+                        <option value="">— Selecciona un área primero —</option>
+                    </select>
+                    <div class="callout-info">
+                        ¿No encuentras una categoría clara? Selecciona <strong>Otras</strong> y describe tu problema en la descripción.
+                    </div>
+                    <small id="cat-loading" style="display:none; color:#888; font-size:12px; margin-top:4px;">
+                        Cargando categorías...
+                    </small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Prioridad</label>
+                <select name="priority" class="form-control">
+                    <option value="baja"   {% if request.POST.priority == 'baja'   %}selected{% endif %}>Baja</option>
+                    <option value="media"  {% if not request.POST.priority or request.POST.priority == 'media' %}selected{% endif %}>Media</option>
+                    <option value="alta"   {% if request.POST.priority == 'alta'   %}selected{% endif %}>Alta</option>
+                    <option value="critica"{% if request.POST.priority == 'critica'%}selected{% endif %}>Crítica</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Descripción *</label>
+                <textarea name="description" class="form-control" rows="5"
+                          placeholder="Detalla el problema lo más posible..."
+                          required style="resize:vertical;">{{ request.POST.description }}</textarea>
+            </div>
+
+            <div class="flex gap-2" style="justify-content:flex-end; margin-top:8px;">
+                <a href="{% url 'tickets:list' %}" class="btn btn-ghost">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btn-submit">Crear Ticket</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    const selectArea     = document.getElementById('select-area');
+    const selectCat      = document.getElementById('select-category');
+    const loadingLabel   = document.getElementById('cat-loading');
+    const btnSubmit      = document.getElementById('btn-submit');
+
+    // Valor que venía del POST (si el servidor rechazó el form)
+    const prevArea    = "{{ request.POST.area|default:'' }}";
+    const prevCat     = "{{ request.POST.category|default:'' }}";
+
+    function resetCategories(placeholder) {
+        selectCat.innerHTML = `<option value="">${placeholder}</option>`;
+        selectCat.disabled  = true;
+    }
+
+    async function loadCategories(areaId) {
+        if (!areaId) {
+            resetCategories('— Selecciona un área primero —');
+            return;
+        }
+
+        loadingLabel.style.display = 'block';
+        selectCat.disabled = true;
+        btnSubmit.disabled = true;
+
+        try {
+            const url  = `{% url 'tickets:categorias_por_area' 0 %}`.replace('/0/', `/${areaId}/`);
+            const resp = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (!resp.ok) throw new Error('Error al obtener categorías');
+
+            const categorias = await resp.json();
+
+            if (categorias.length === 0) {
+                resetCategories('Sin categorías para esta área');
+            } else {
+                selectCat.innerHTML = '<option value="">Seleccionar categoría</option>';
+                categorias.forEach(cat => {
+                    const opt      = document.createElement('option');
+                    opt.value      = cat.categoryId;
+                    opt.textContent = cat.categoryName;
+                    // Reseleccionar si venía del POST
+                    if (String(cat.categoryId) === prevCat) opt.selected = true;
+                    selectCat.appendChild(opt);
+                });
+                selectCat.disabled = false;
+            }
+        } catch (err) {
+            resetCategories('Error al cargar categorías');
+            console.error(err);
+        } finally {
+            loadingLabel.style.display = 'none';
+            btnSubmit.disabled = false;
+        }
+    }
+
+    selectArea.addEventListener('change', function () {
+        loadCategories(this.value);
+    });
+
+    // Si hay un área preseleccionada (repost tras error), cargar sus categorías
+    if (prevArea) {
+        selectArea.value = prevArea;
+        loadCategories(prevArea);
+    }
+})();
+</script>
+{% endblock %}

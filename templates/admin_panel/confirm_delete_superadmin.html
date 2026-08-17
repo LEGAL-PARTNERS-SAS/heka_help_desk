@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar Super Administrador{% endblock %}
+{% block page_title %}Eliminar Super Administrador{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;">
+    <div class="card" style="border-color:var(--danger);">
+        <div style="font-size:2.5rem; margin-bottom:16px;">🔐</div>
+        <h2 style="font-family:'Syne',sans-serif; font-weight:700; margin-bottom:12px;">
+            Acción restringida
+        </h2>
+        <p style="color:var(--muted); margin-bottom:8px;">
+            Estás a punto de eliminar al super administrador:
+        </p>
+        <p style="background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+                  padding:12px 16px; margin-bottom:16px; font-weight:500;">
+            {{ objeto }}
+        </p>
+        <p style="color:var(--danger); font-size:0.88rem; margin-bottom:20px;">
+            ⚠️ Esta acción <strong>no se puede deshacer</strong>. Para continuar debes
+            ingresar la contraseña maestra del sistema.
+        </p>
+
+        <form method="post" action="{% url 'admin_panel:user_delete' usuario_pk %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Contraseña maestra *</label>
+                <input type="password" name="master_password" class="form-control"
+                       placeholder="Ingresa la contraseña maestra" required autofocus>
+            </div>
+            <div class="flex gap-2" style="margin-top:8px;">
+                <a href="{% url 'admin_panel:usuarios' %}" class="btn btn-ghost">Cancelar</a>
+                <button type="submit" class="btn btn-danger">Confirmar eliminación</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

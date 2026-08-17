@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}{{ accion }} Categoría{% endblock %}
+{% block page_title %}{{ accion }} Categoría{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{% url 'admin_panel:categories' %}" class="btn btn-ghost">← Volver</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;">
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Nombre de la Categoría *</label>
+                <input type="text" name="category_name" class="form-control"
+                    placeholder="Ej: Soporte técnico, Facturación..."
+                    value="{{ category.categoryName|default:'' }}" autofocus required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Área *</label>
+                <select name="area" class="form-control" required>
+                    <option value="">Seleccionar área</option>
+                    {% for area in areas %}
+                        <option value="{{ area.areaId }}"
+                            {% if category.area.areaId == area.areaId %}selected{% endif %}>
+                            {{ area.areaName }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex gap-2" style="justify-content:flex-end;margin-top:8px;">
+                <a href="{% url 'admin_panel:categories' %}" class="btn btn-ghost">Cancelar</a>
+                <button type="submit" class="btn btn-primary">{{ accion }} Categoría</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

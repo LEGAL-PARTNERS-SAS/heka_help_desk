@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Notificaciones{% endblock %}
+{% block page_title %}Notificaciones{% endblock %}
+
+{% block topbar_actions %}
+{% if no_leidas > 0 %}
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="marcar_leidas">
+    <button type="submit" class="btn btn-ghost" style="padding:8px 16px;font-size:.85rem;">
+        ✓ Marcar todas como leídas
+    </button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+{% if no_leidas > 0 %}
+<div class="alert alert-info" style="margin-bottom:20px;">
+    Tienes <strong>{{ no_leidas }}</strong> notificación{{ no_leidas|pluralize:",es" }} sin leer.
+</div>
+{% endif %}
+
+<div class="card" style="padding:0;overflow:hidden;">
+    {% if notificaciones %}
+        {% for notif in notificaciones %}
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);
+                    display:flex;gap:14px;align-items:flex-start;
+                    {% if not notif.leida %}background:rgba(var(--accent-rgb,37,141,214),.05);{% endif %}
+                    transition:background .2s;">
+            <!-- Ícono según tipo -->
+            <div style="font-size:1.4rem;flex-shrink:0;padding-top:2px;">
+                {% if notif.tipo == 'ticket_nuevo' %}🎫
+                {% elif notif.tipo == 'ticket_asignado' %}👤
+                {% elif notif.tipo == 'ticket_estado' %}🔄
+                {% elif notif.tipo == 'ticket_comentario' %}💬
+                {% elif notif.tipo == 'ticket_cerrado' %}✅
+                {% else %}🔔
+                {% endif %}
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                    <strong style="font-size:.9rem;">{{ notif.titulo }}</strong>
+                    {% if not notif.leida %}
+                        <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></span>
+                    {% endif %}
+                </div>
+                <p style="font-size:.85rem;color:var(--muted);margin-bottom:6px;">{{ notif.mensaje }}</p>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span style="font-size:.75rem;color:var(--muted);">
+                        {{ notif.createdAt|date:"d/m/Y H:i" }}
+                    </span>
+                    {% if notif.ticket_id %}
+                        <a href="{% url 'tickets:detail' notif.ticket_id %}"
+                           style="font-size:.78rem;color:var(--accent);text-decoration:none;font-weight:500;">
+                            Ver ticket →
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="text-align:center;padding:60px;color:var(--muted);">
+            <div style="font-size:2.5rem;margin-bottom:12px;">🔔</div>
+            <p style="font-size:1rem;">No tienes notificaciones</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

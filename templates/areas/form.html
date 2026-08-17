@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ accion }} Área{% endblock %}
+{% block page_title %}{{ accion }} Área{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{% url 'admin_panel:areas' %}" class="btn btn-ghost">← Volver</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;">
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Nombre del Área *</label>
+                <input type="text" name="area_name" class="form-control"
+                    placeholder="Ej: Tecnología, RRHH, Contabilidad..."
+                    value="{{ area.areaName|default:'' }}" autofocus required>
+            </div>
+            <div class="flex gap-2" style="justify-content:flex-end;margin-top:8px;">
+                <a href="{% url 'admin_panel:areas' %}" class="btn btn-ghost">Cancelar</a>
+                <button type="submit" class="btn btn-primary">{{ accion }} Área</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

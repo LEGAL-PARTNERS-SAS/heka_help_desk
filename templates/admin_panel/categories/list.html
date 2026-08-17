@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Categorías{% endblock %}
+{% block page_title %}Categorías de Tickets{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{% url 'admin_panel:category_create' %}" class="btn btn-primary">+ Nueva Categoría</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    {% if categories %}
+    <table class="table">
+        <thead>
+            <tr><th>#</th><th>Categoría</th><th>Área</th><th>Tickets</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for cat in categories %}
+            <tr>
+                <td class="text-muted">{{ cat.categoryId }}</td>
+                <td><strong>{{ cat.categoryName }}</strong></td>
+                <td><span class="badge badge-blue">{{ cat.area.areaName }}</span></td>
+                <td><span class="badge badge-gray">{{ cat.tickets.count }}</span></td>
+                <td style="text-align:right;">
+                    <a href="{% url 'admin_panel:category_edit' cat.categoryId %}" class="btn btn-ghost" style="padding:6px 12px;font-size:.82rem;">Editar</a>
+                    <a href="{% url 'admin_panel:category_delete' cat.categoryId %}" class="btn btn-danger" style="padding:6px 12px;font-size:.82rem;margin-left:6px;">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:60px;color:var(--muted);">
+        <p style="font-size:1.1rem;margin-bottom:8px;">No hay categorías creadas todavía.</p>
+        <p style="font-size:.85rem;margin-bottom:24px;">Primero asegúrate de tener áreas creadas.</p>
+        <a href="{% url 'admin_panel:category_create' %}" class="btn btn-primary">Crear primera categoría</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

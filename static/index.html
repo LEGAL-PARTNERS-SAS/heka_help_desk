@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heka | Central Operativa</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<style>
+    :root {
+        --bg-body: #f8fafc;
+        --bg-card: #ffffff;
+        --border: #e2e8f0;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --brand: #2563eb;
+        --brand-inner: #eff6ff;
+
+        /* Modificado: Destacado Premium/Cartera más vivo en light mode */
+        --premium: #d97706;
+        --premium-bg: linear-gradient(135deg, #fffdf5 0%, #fef3c7 100%);
+        --premium-border: #fcd34d;
+
+        /* Nueva variable para Heka Time Tracker */
+        --timebilling-color: #6366f1;
+        --timebilling-bg: #f5f3ff;
+        --timebilling-border: #ddd6fe;
+
+        /* Nueva variable para la sección de TICS (Color representativo tecnológico/seguridad) */
+        --tics-color: #0d9488;
+        --tics-bg: #f0fdfa;
+        --tics-border: #99f6e4;
+        --radius: 32px;
+        --shadow: 0 4px 20px -1px rgba(0, 0, 0, 0.05);
+        --transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.dark {
+        --bg-body: #030712;
+        --bg-card: #0f172a;
+        --border: #1e293b;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --brand: #3b82f6;
+        --brand-inner: rgba(59, 130, 246, 0.1);
+
+        /* Modificado: Destacado Premium/Cartera de alto impacto en dark mode */
+        --premium: #fbbf24;
+        --premium-bg: linear-gradient(135deg, #1e1b4b 0%, #111827 100%);
+        --premium-border: #b45309;
+
+        /* Timebilling Dark */
+        --timebilling-bg: rgba(99, 102, 241, 0.04);
+        --timebilling-border: rgba(99, 102, 241, 0.2);
+
+        /* TICS Dark */
+        --tics-bg: rgba(13, 148, 136, 0.03);
+        --tics-border: rgba(13, 148, 136, 0.2);
+        --shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: var(--bg-body);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: background-color 0.6s var(--transition);
+        overflow-x: hidden;
+        position: relative;
+    }
+
+    .glow {
+        position: fixed;
+        width: 40vw;
+        height: 40vw;
+        background: radial-gradient(circle, var(--brand-inner) 0%, transparent 70%);
+        top: -10vw;
+        right: -10vw;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.6;
+    }
+
+    .main-content {
+        width: 100%;
+        max-width: 1200px;
+        padding: 40px 24px;
+        position: relative;
+        z-index: 10;
+    }
+
+    header {
+        text-align: center;
+        margin-bottom: 80px;
+    }
+
+    .logo {
+        height: 64px;
+        margin-bottom: 24px;
+        filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05));
+    }
+
+    h1 {
+        font-size: clamp(2.5rem, 8vw, 4rem);
+        font-weight: 800;
+        letter-spacing: -0.05em;
+        margin-bottom: 16px;
+        background: linear-gradient(180deg, var(--text-main) 0%, var(--text-muted) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+        color: var(--text-muted);
+        font-size: 1.2rem;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 24px;
+    }
+
+    .card {
+        grid-column: span 6;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 48px;
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+    }
+
+    /* Modificado: Super destacado para Reporte de Cartera */
+    .card.premium {
+        grid-column: span 12;
+        background: var(--premium-bg);
+        border: 2px solid var(--premium-border);
+        flex-direction: row;
+        align-items: center;
+        gap: 40px;
+        padding: 60px;
+        box-shadow: 0 10px 30px -5px rgba(217, 119, 6, 0.15);
+    }
+
+    body.dark .card.premium {
+        box-shadow: 0 10px 40px -5px rgba(180, 83, 9, 0.3);
+    }
+
+    /* Nueva clase para la tarjeta de Timebilling */
+    .card.timebilling-exclusive {
+        grid-column: span 6;
+        background: var(--timebilling-bg);
+        border: 1px solid var(--timebilling-border);
+    }
+
+    /* Nueva clase para la tarjeta de TICS */
+    .card.tics-exclusive {
+        grid-column: span 12;
+        background: var(--tics-bg);
+        border: 1px solid var(--tics-border);
+        flex-direction: row;
+        align-items: center;
+        gap: 40px;
+        padding: 60px;
+    }
+
+    .card:hover {
+        transform: translateY(-12px) scale(1.01);
+        border-color: var(--brand);
+        box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.15);
+    }
+
+    .card.premium:hover {
+        border-color: var(--premium);
+        box-shadow: 0 30px 60px -12px rgba(217, 119, 6, 0.3);
+    }
+
+    .card.timebilling-exclusive:hover { border-color: var(--timebilling-color); }
+    .card.tics-exclusive:hover { border-color: var(--tics-color); }
+
+    .icon-box {
+        width: 72px;
+        height: 72px;
+        background: var(--brand-inner);
+        color: var(--brand);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        margin-bottom: 32px;
+        transition: var(--transition);
+    }
+
+    .premium .icon-box {
+        margin-bottom: 0;
+        background: var(--premium);
+        color: #000;
+        width: 90px;
+        height: 90px;
+        font-size: 2.8rem;
+    }
+
+    body.dark .premium .icon-box {
+        color: #030712;
+    }
+
+    /* Icono para Timebilling */
+    .timebilling-exclusive .icon-box {
+        background: var(--timebilling-color);
+        color: #fff;
+    }
+
+    /* Icono para la sección de TICS */
+    .tics-exclusive .icon-box {
+        margin-bottom: 0;
+        background: var(--tics-color);
+        color: #fff;
+        width: 90px;
+        height: 90px;
+        font-size: 2.8rem;
+    }
+
+    .card:hover .icon-box {
+        transform: scale(1.15) rotate(-5deg);
+    }
+
+    .access-tag {
+        background: var(--premium);
+        color: #000;
+        padding: 8px 16px;
+        border-radius: 100px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    body.dark .access-tag {
+        color: #030712;
+    }
+
+    /* Tag de acceso para TICS */
+    .access-tag.tics-tag {
+        background: var(--tics-color);
+        color: white;
+    }
+
+    h3 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 14px;
+        letter-spacing: -0.03em;
+    }
+
+    p {
+        color: var(--text-muted);
+        line-height: 1.7;
+        font-size: 1.05rem;
+    }
+
+    .footer-link {
+        margin-top: auto;
+        padding-top: 40px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        color: var(--brand);
+        transition: var(--transition);
+    }
+
+    .card:hover .footer-link { gap: 18px; }
+
+    .premium .footer-link { color: #d97706; font-weight: 800; }
+    body.dark .premium .footer-link { color: var(--premium); }
+
+    .timebilling-exclusive .footer-link { color: var(--timebilling-color); }
+    .tics-exclusive .footer-link { color: var(--tics-color); }
+
+    .theme-switch {
+        position: fixed;
+        top: 40px;
+        right: 40px;
+        width: 50px;
+        height: 50px;
+        border-radius: 18px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        color: var(--text-main);
+        box-shadow: var(--shadow);
+        z-index: 100;
+        transition: var(--transition);
+    }
+
+    .theme-switch:hover { transform: rotate(15deg); border-color: var(--brand); }
+
+    @media (max-width: 1024px) {
+        .card { padding: 40px; }
+        .card.premium, .card.tics-exclusive { padding: 40px; gap: 30px; }
+    }
+
+    @media (max-width: 850px) {
+        .card { grid-column: span 12; }
+        .card.premium, .card.tics-exclusive { flex-direction: column; align-items: flex-start; }
+        .premium .icon-box, .tics-exclusive .icon-box { margin-bottom: 20px; }
+        header { margin-bottom: 50px; }
+    }
+
+    @media (max-width: 480px) {
+        .main-content { padding: 20px; }
+        h1 { font-size: 2.2rem; }
+        .theme-switch { top: 20px; right: 20px; }
+    }
+</style>
+</head>
+<body class="dark">
+
+<div class="glow"></div>
+
+<button class="theme-switch" id="themeBtn">
+    <i class="ph-bold ph-sun-dim" id="themeIcon"></i>
+</button>
+
+<main class="main-content">
+    <header>
+        <img src="https://heka.com.ec/wp-content/uploads/2026/04/favicon-1.png" alt="Heka" class="logo">
+        <h1>Heka Hub</h1>
+        <p class="subtitle">Ecosistema inteligente para la gestión de servicios corporativos.</p>
+    </header>
+
+    <div class="bento-grid">
+        <a href="https://soporte.heka.com.ec/dashboard/" class="card premium">
+            <div class="icon-box">
+                <i class="ph-bold ph-crown"></i>
+            </div>
+            <div class="premium-body">
+                <div class="access-tag"><i class="ph-fill ph-lock-key"></i> ACCESO EXCLUSIVO SOCIOS</div>
+                <h3>Reporte de Cartera</h3>
+                <p>Visualización estratégica de métricas financieras y estados de cuenta corporativos. Acceso restringido únicamente para socios autorizados de Heka.</p>
+                <div class="footer-link">Consultar cartera <i class="ph-bold ph-arrow-right"></i></div>
+            </div>
+        </a>
+
+        <a href="https://soporte.heka.com.ec/horas/" class="card timebilling-exclusive">
+            <div class="icon-box">
+                <i class="ph-bold ph-hourglass-high"></i>
+            </div>
+            <h3>Heka Time Tracker</h3>
+            <p>Registro y control de horas laborables, proyectos asignados y reportería de productividad de tus servicios.</p>
+            <div class="footer-link">Iniciar tracking <i class="ph-bold ph-arrow-right"></i></div>
+        </a>
+
+        <a href="https://soporte.heka.com.ec/tickets/" class="card">
+            <div class="icon-box">
+                <i class="ph-bold ph-ticket"></i>
+            </div>
+            <h3>Tickets</h3>
+            <p>Centro de soporte para la resolución ágil de incidencias y requerimientos técnicos.</p>
+            <div class="footer-link">Acceder al soporte <i class="ph-bold ph-arrow-right"></i></div>
+        </a>
+
+        <a href="https://soporte.heka.com.ec/inventario/" class="card">
+            <div class="icon-box">
+                <i class="ph-bold ph-package"></i>
+            </div>
+            <h3>Inventario General</h3>
+            <p>Control y trazabilidad de activos físicos, hardware y suministros en tiempo real.</p>
+            <div class="footer-link">Ver inventario <i class="ph-bold ph-arrow-right"></i></div>
+        </a>
+
+<a href="https://soporte.heka.com.ec/heka-track-suite/" class="card">
+    <div class="icon-box">
+        <i class="ph-bold ph-receipt"></i>
+    </div>
+    <h3>Heka Tax Suite</h3>
+    <p>Gestión y declaración de IVA desde comprobantes electrónicos. Clasificación automática por casillero del formulario 104A del SRI.</p>
+    <div class="footer-link">Gestionar IVA <i class="ph-bold ph-arrow-right"></i></div>
+</a>
+
+        <a href="https://soporte.heka.com.ec/inventario-tech" class="card tics-exclusive">
+            <div class="icon-box">
+                <i class="ph-bold ph-desktop"></i>
+            </div>
+            <div class="tics-body">
+                <div class="access-tag.tics-tag" class="access-tag tics-tag"><i class="ph-fill ph-shield-check"></i> EXCLUSIVO DEPARTAMENTO TICS</div>
+                <h3>Inventario de Cómputo</h3>
+                <p>Infraestructura interna, asignación de estaciones de trabajo y especificaciones de equipos informáticos. Espacio independiente y restringido solo a personal técnico de TICS.</p>
+                <div class="footer-link">Gestionar equipos <i class="ph-bold ph-arrow-right"></i></div>
+            </div>
+        </a>
+    </div>
+</main>
+
+<script>
+    const body = document.body;
+    const themeBtn = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+
+    themeBtn.addEventListener('click', () => {
+        body.classList.toggle('dark');
+        const isDark = body.classList.contains('dark');
+        themeIcon.className = isDark ? 'ph-bold ph-sun-dim' : 'ph-bold ph-moon-stars';
+        localStorage.setItem('heka-theme', isDark ? 'dark' : 'light');
+    });
+
+    if (localStorage.getItem('heka-theme') === 'light') {
+        body.classList.remove('dark');
+        themeIcon.className = 'ph-bold ph-moon-stars';
+    }
+
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, i) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, 100 * i);
+    });
+</script>
+</body>
+</html>

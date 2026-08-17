@@ -1,0 +1,194 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro — Heka</title>
+
+    <script>
+        (function () {
+            var t = localStorage.getItem('heka-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        }());
+    </script>
+
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        .register-box {
+            width: 100%;
+            max-width: 460px;
+            padding: 48px 44px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            position: relative;
+            animation: fadeUp .4s ease;
+            box-shadow: var(--shadow-lg);
+            z-index: 1;
+            transition: background 0.3s, border-color 0.3s, transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .register-box:hover {
+            transform: translateY(-3px);
+            border-color: rgba(37,141,214,0.18);
+            box-shadow: 0 24px 60px rgba(37,141,214,0.14);
+        }
+        @media (max-width: 520px) {
+            .register-box { padding: 36px 24px; }
+        }
+        .auth-banner {
+            display: grid;
+            gap: 8px;
+            padding: 16px 18px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            background: rgba(37,141,214,0.08);
+            border: 1px solid rgba(37,141,214,0.2);
+        }
+        .auth-banner strong {
+            font-size: 1rem;
+            display: block;
+            color: var(--text);
+        }
+        .auth-banner p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+        .divider {
+            text-align: center;
+            margin: 24px 0 20px;
+            position: relative;
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-family: 'Poppins', sans-serif;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: var(--border);
+        }
+        .divider::before { left: 0; }
+        .divider::after  { right: 0; }
+        .login-link {
+            text-align: center;
+            font-size: 0.85rem;
+            font-family: 'Poppins', sans-serif;
+            color: var(--muted);
+        }
+        .login-link a { color: var(--accent); font-weight: 600; }
+        .login-link a:hover { color: var(--accent-h); }
+        .password-hint {
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin-top: 4px;
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+<body class="login-page">
+
+<button class="login-theme-toggle" id="themeToggle">
+    <svg id="iconDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+    </svg>
+    <svg id="iconLight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    <span id="themeLabel">Modo oscuro</span>
+</button>
+
+<div class="register-box">
+    <div class="login-deco"></div>
+
+    <div class="login-logo-wrap">
+        <img src="{% static 'img/logo_heka.png' %}" alt="Logo Heka">
+        <span class="brand">Heka</span>
+    </div>
+    <p class="login-subtitle">Crea tu cuenta de usuario</p>
+    <div class="auth-banner">
+        <strong>Listo para comenzar</strong>
+        <p>Completa tu registro para acceder a la plataforma y gestionar tickets desde el primer minuto.</p>
+    </div>
+
+    {% if errors.general %}
+        <div class="alert alert-error">{{ errors.general }}</div>
+    {% endif %}
+
+    <form id="register-form" method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Correo -->
+        <div class="form-group">
+            <label class="form-label" for="id_email">Correo electrónico</label>
+            <input class="form-control {% if errors.email %}is-invalid{% endif %}"
+                   type="email" id="id_email" name="email"
+                   value="{{ form_data.email|default:'' }}"
+                   placeholder="correo@empresa.com"
+                   required
+                   data-msg-required="El correo es obligatorio."
+                   data-msg-email="Ingresa un correo válido.">
+            {% if errors.email %}
+                <span class="field-error">⚠ {{ errors.email }}</span>
+            {% endif %}
+        </div>
+
+        <!-- Contraseña -->
+        <div class="form-group">
+            <label class="form-label" for="id_password">Contraseña</label>
+            <input class="form-control {% if errors.password %}is-invalid{% endif %}"
+                   type="password" id="id_password" name="password"
+                   placeholder="••••••••"
+                   required minlength="8"
+                   data-msg-required="La contraseña es obligatoria."
+                   data-msg-minlength="Mínimo 8 caracteres.">
+            {% if errors.password %}
+                <span class="field-error">⚠ {{ errors.password }}</span>
+            {% endif %}
+            <p class="password-hint">Mín. 8 caracteres, 1 mayúscula y 1 número.</p>
+        </div>
+
+        <!-- Confirmar contraseña -->
+        <div class="form-group">
+            <label class="form-label" for="id_password2">Confirmar contraseña</label>
+            <input class="form-control {% if errors.password2 %}is-invalid{% endif %}"
+                   type="password" id="id_password2" name="password2"
+                   placeholder="••••••••"
+                   required
+                   data-match="#id_password"
+                   data-msg-required="Confirma tu contraseña."
+                   data-msg-match="Las contraseñas no coinciden.">
+            {% if errors.password2 %}
+                <span class="field-error">⚠ {{ errors.password2 }}</span>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full"
+                style="justify-content:center; padding:13px;
+                       font-family:'Bricolage Grotesque',sans-serif;
+                       font-size:1rem; font-weight:700; margin-top:4px;">
+            Crear cuenta
+        </button>
+    </form>
+
+    <div class="divider">¿Ya tienes cuenta?</div>
+    <p class="login-link">
+        <a href="{% url 'users:login' %}">← Iniciar sesión</a>
+    </p>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
+<script>window.jQuery || document.write('<script src="{% static "js/jquery.min.js" %}"><\/script>')</script>
+<script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>
