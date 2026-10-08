@@ -131,6 +131,21 @@ DATABASES = {
 
 AUTH_USER_MODEL = 'users.User'
 
+# ── Contraseña compartida de HEKA (heka-colaboradores como fuente) ─────────────
+# El login con contraseña propia + MFA sigue viviendo en apps/users; esto
+# agrega un backend de respaldo (ModelBackend va primero, nunca se reemplaza)
+# para que la misma contraseña compartida de HEKA también funcione acá si la
+# local no calza. Ver apps/users/heka_verify.py -- la identidad y la
+# autorización siguen siendo 100% locales, nunca se autoprovisiona nada.
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'apps.users.heka_verify.HekaVerifyBackend',
+]
+HEKA_VERIFY_URL = 'https://soporte.heka.com.ec/colaboradores/api/verify'
+HEKA_VERIFY_CLIENT_ID = env('HEKA_VERIFY_CLIENT_ID', default='')
+HEKA_VERIFY_CLIENT_SECRET = env('HEKA_VERIFY_CLIENT_SECRET', default='')
+LOGIN_REDIRECT_URL_FAILURE = '/usuarios/login/'
+
 # ── Contraseñas ───────────────────────────────────────────────────────────────
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
