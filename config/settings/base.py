@@ -144,6 +144,10 @@ AUTHENTICATION_BACKENDS = [
 HEKA_VERIFY_URL = 'https://soporte.heka.com.ec/colaboradores/api/verify'
 HEKA_VERIFY_CLIENT_ID = env('HEKA_VERIFY_CLIENT_ID', default='')
 HEKA_VERIFY_CLIENT_SECRET = env('HEKA_VERIFY_CLIENT_SECRET', default='')
+# Sincronizacion hacia adelante (ver apps/users/heka_sync.py): cuando un
+# admin fija la contrasena de alguien acá, se la manda tambien a
+# Colaboradores para que quede como la compartida.
+HEKA_SYNC_PASSWORD_URL = 'https://soporte.heka.com.ec/colaboradores/api/sync-password'
 LOGIN_REDIRECT_URL_FAILURE = '/usuarios/login/'
 
 # ── Contraseñas ───────────────────────────────────────────────────────────────

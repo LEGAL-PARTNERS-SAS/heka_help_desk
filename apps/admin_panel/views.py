@@ -342,6 +342,8 @@ def userAdminCreateView(request):
                 )
                 new_user.set_password(password)
                 new_user.save()
+                from apps.users.heka_sync import sincronizar_password_compartida
+                sincronizar_password_compartida(new_user.email, password)
 
                 # Guardar áreas adicionales en user_area_assignments
                 from apps.users.models import UserAreaAssignment
@@ -454,6 +456,9 @@ def userAdminEditView(request, pk):
             usuario.set_password(new_password)
 
         usuario.save()
+        if new_password:
+            from apps.users.heka_sync import sincronizar_password_compartida
+            sincronizar_password_compartida(usuario.email, new_password)
 
         # Actualizar asignaciones de áreas
         UserAreaAssignment.objects.filter(user=usuario).delete()
