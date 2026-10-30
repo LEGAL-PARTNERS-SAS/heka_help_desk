@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Tickets{% endblock %}
 {% block page_title %}Tickets{% endblock %}
 {% block nav_tickets %}active{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tickets.css' %}">{% endblock %}
 
 {% block topbar_actions %}
     <a href="{% url 'tickets:create' %}" class="btn btn-primary">
@@ -14,156 +16,109 @@
 
 {% block content %}
 
-<div class="card panel-card">
-    <div class="panel-header">
-        <div>
-            <div class="card-title">Filtros rápidos</div>
-            <p>Busca tickets por estado, prioridad o área y encuentra lo que necesitas más rápido.</p>
-        </div>
-        <div class="filter-actions">
-            <a href="{% url 'tickets:create' %}" class="btn btn-primary">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Nuevo Ticket
-            </a>
-        </div>
-    </div>
-    <form method="get" class="filter-grid">
-        <div>
-            <label class="form-label">Estado</label>
-            <select name="status" class="form-control">
-                <option value="">Todos</option>
-                <option value="abierto"    {% if status_filter == 'abierto' %}selected{% endif %}>🟡 Abierto</option>
-                <option value="en_proceso" {% if status_filter == 'en_proceso' %}selected{% endif %}>🔵 En Proceso</option>
-                <option value="pendiente"  {% if status_filter == 'pendiente' %}selected{% endif %}>🟠 Pendiente</option>
-                <option value="en_espera"  {% if status_filter == 'en_espera' %}selected{% endif %}>⏸ En Espera</option>
-                <option value="escalado"   {% if status_filter == 'escalado' %}selected{% endif %}>🔴 Escalado</option>
-                <option value="resuelto"   {% if status_filter == 'resuelto' %}selected{% endif %}>✅ Resuelto</option>
-                <option value="cerrado"    {% if status_filter == 'cerrado' %}selected{% endif %}>⚫ Cerrado</option>
-            </select>
-        </div>
-        <div>
-            <label class="form-label">Prioridad</label>
-            <select name="priority" class="form-control">
-                <option value="">Todas</option>
-                <option value="baja"    {% if priority_filter == 'baja' %}selected{% endif %}>Baja</option>
-                <option value="media"   {% if priority_filter == 'media' %}selected{% endif %}>Media</option>
-                <option value="alta"    {% if priority_filter == 'alta' %}selected{% endif %}>Alta</option>
-                <option value="critica" {% if priority_filter == 'critica' %}selected{% endif %}>Crítica</option>
-            </select>
-        </div>
-        {% if areas_disponibles %}
-        <div>
-            <label class="form-label">Área</label>
-            <select name="area" class="form-control">
-                <option value="">Todas</option>
-                {% for area in areas_disponibles %}
-                    <option value="{{ area.areaId }}" {% if area_filter == area.areaId|stringformat:"s" %}selected{% endif %}>
-                        {{ area.areaName }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        {% endif %}
-        <div class="filter-actions">
-            <button type="submit" class="btn btn-primary">Filtrar</button>
-            {% if status_filter or priority_filter or area_filter %}
-                <a href="{% url 'tickets:list' %}" class="btn btn-ghost">✕ Limpiar</a>
-            {% endif %}
-        </div>
-    </form>
+<div class="tk-kpis">
+    <div class="tk-kpi"><div class="n">{{ kpi_activos }}</div><div class="l">Activos</div></div>
+    <div class="tk-kpi bad"><div class="n">{{ kpi_criticos_sin_asignar }}</div><div class="l">Críticos sin asignar</div></div>
+    <div class="tk-kpi warn"><div class="n">{{ kpi_vencidos }}</div><div class="l">Vencidos &gt; 48h</div></div>
+    <div class="tk-kpi ok"><div class="n">{% if kpi_resolucion_dias %}{{ kpi_resolucion_dias }}d{% else %}—{% endif %}</div><div class="l">Resolución promedio</div></div>
 </div>
 
-<div class="card table-card">
-    {% if tickets %}
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Número</th>
-                <th>Título</th>
-                <th>Área</th>
-                <th>Estado</th>
-                <th>Prioridad</th>
-                <th>Asignado a</th>
-                <th>Fecha</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for ticket in tickets %}
-            <tr>
-                <td><code class="ticket-number">{{ ticket.ticketNumber }}</code></td>
-                <td>
-                    <strong>{{ ticket.title }}</strong>
-                    <div class="ticket-subtext">
-                        Por: {% if ticket.createdBy %}{{ ticket.createdBy.fullName|default:ticket.createdBy.email }}{% else %}Usuario desconocido{% endif %}
-                    </div>
-                </td>
-                <td class="text-muted">{{ ticket.area }}</td>
-                <td>
-                    {% if ticket.status == 'abierto' %}
-                        <span class="badge badge-yellow">🟡 Abierto</span>
-                    {% elif ticket.status == 'en_proceso' %}
-                        <span class="badge badge-blue">🔵 En Proceso</span>
-                    {% elif ticket.status == 'pendiente' %}
-                        <span class="badge badge-yellow">🟠 Pendiente</span>
-                    {% elif ticket.status == 'en_espera' %}
-                        <span class="badge badge-gray">⏸ En Espera</span>
-                    {% elif ticket.status == 'escalado' %}
-                        <span class="badge badge-red">🔴 Escalado</span>
-                    {% elif ticket.status == 'resuelto' %}
-                        <span class="badge badge-green">✅ Resuelto</span>
-                    {% else %}
-                        <span class="badge badge-gray">⚫ Cerrado</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if ticket.priority == 'critica' %}
-                        <span class="badge badge-red">Crítica</span>
-                    {% elif ticket.priority == 'alta' %}
-                        <span class="badge badge-yellow">Alta</span>
-                    {% elif ticket.priority == 'media' %}
-                        <span class="badge badge-blue">Media</span>
-                    {% else %}
-                        <span class="badge badge-gray">Baja</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if ticket.assignedTo %}
-                        <span class="user-pill">
-                            <span class="avatar-badge-sm">{{ ticket.assignedTo.name|first|upper }}{{ ticket.assignedTo.lastname|first|upper }}</span>
-                            {{ ticket.assignedTo.name }} {{ ticket.assignedTo.lastname }}
-                        </span>
-                    {% else %}
-                        <span class="ticket-subtext">Sin asignar</span>
-                    {% endif %}
-                </td>
-                <td class="text-muted ticket-subtext text-nowrap">
-                    {{ ticket.createdAt|date:"d/m/Y" }}
-                </td>
-                <td>
-                    <a href="{% url 'tickets:detail' ticket.pk %}"
-                       class="btn btn-ghost btn-ghost-sm">Ver</a>
-                </td>
-            </tr>
+<div class="tk-chips" style="margin-bottom:12px;">
+    <a href="?" class="tk-chip {% if not vista %}on{% endif %}">Todos</a>
+    <a href="?vista=activos" class="tk-chip {% if vista == 'activos' %}on{% endif %}">Activos</a>
+    <a href="?vista=vencidos" class="tk-chip {% if vista == 'vencidos' %}on{% endif %}">Vencidos</a>
+    <a href="?vista=criticos" class="tk-chip {% if vista == 'criticos' %}on{% endif %}">Críticos</a>
+</div>
+
+<form method="get" class="tk-toolbar">
+    <div class="tk-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" name="q" value="{{ q }}" placeholder="Buscar por número, título o persona…">
+    </div>
+</form>
+
+<form method="get" class="tk-filters">
+    <input type="hidden" name="q" value="{{ q }}">
+    <div class="fgroup">
+        <label>Estado</label>
+        <select name="status" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            <option value="abierto"    {% if status_filter == 'abierto' %}selected{% endif %}>Abierto</option>
+            <option value="en_proceso" {% if status_filter == 'en_proceso' %}selected{% endif %}>En proceso</option>
+            <option value="pendiente"  {% if status_filter == 'pendiente' %}selected{% endif %}>Pendiente</option>
+            <option value="en_espera"  {% if status_filter == 'en_espera' %}selected{% endif %}>En espera</option>
+            <option value="escalado"   {% if status_filter == 'escalado' %}selected{% endif %}>Escalado</option>
+            <option value="resuelto"   {% if status_filter == 'resuelto' %}selected{% endif %}>Resuelto</option>
+            <option value="cerrado"    {% if status_filter == 'cerrado' %}selected{% endif %}>Cerrado</option>
+        </select>
+    </div>
+    <div class="fgroup">
+        <label>Prioridad</label>
+        <select name="priority" onchange="this.form.submit()">
+            <option value="">Todas</option>
+            <option value="baja"    {% if priority_filter == 'baja' %}selected{% endif %}>Baja</option>
+            <option value="media"   {% if priority_filter == 'media' %}selected{% endif %}>Media</option>
+            <option value="alta"    {% if priority_filter == 'alta' %}selected{% endif %}>Alta</option>
+            <option value="critica" {% if priority_filter == 'critica' %}selected{% endif %}>Crítica</option>
+        </select>
+    </div>
+    {% if areas_disponibles %}
+    <div class="fgroup">
+        <label>Área</label>
+        <select name="area" onchange="this.form.submit()">
+            <option value="">Todas</option>
+            {% for area in areas_disponibles %}
+                <option value="{{ area.areaId }}" {% if area_filter == area.areaId|stringformat:"s" %}selected{% endif %}>
+                    {{ area.areaName }}
+                </option>
             {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <div class="card empty-state">
-        <h2>{% if status_filter or priority_filter or area_filter %}No hay tickets con esos filtros{% else %}No hay tickets todavía{% endif %}</h2>
-            {% if status_filter or priority_filter or area_filter %}
-                No hay tickets con esos filtros
-            {% else %}
-                No hay tickets todavía
-            {% endif %}
-        </p>
-        {% if not status_filter and not priority_filter and not area_filter %}
-        <p>Crea tu primer ticket para comenzar.</p>
-        <a href="{% url 'tickets:create' %}" class="btn btn-primary">Crear Ticket</a>
-        {% endif %}
+        </select>
     </div>
     {% endif %}
+    {% if status_filter or priority_filter or area_filter %}
+        <a href="{% url 'tickets:list' %}" class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;">✕ Limpiar</a>
+    {% endif %}
+</form>
+
+{% if tickets %}
+<div class="tk-list">
+    {% for ticket in tickets %}
+    <a href="{% url 'tickets:detail' ticket.pk %}" class="tk-row" data-priority="{{ ticket.priority }}">
+        <div class="main">
+            <div class="num">{{ ticket.ticketNumber }}</div>
+            <div class="ttl">{{ ticket.title }}</div>
+        </div>
+        <div class="area">{{ ticket.area }}</div>
+        <div><span class="pill dot pill-{{ ticket.status }}">{{ ticket.get_status_display }}</span></div>
+        <div><span class="pill pill-{{ ticket.priority }}">{{ ticket.get_priority_display }}</span></div>
+        <div class="assignee {% if not ticket.assignedTo %}empty{% endif %}">
+            {% if ticket.assignedTo %}
+                <span class="tk-avatar">{{ ticket.assignedTo.name|first|upper }}{{ ticket.assignedTo.lastname|first|upper }}</span>
+                {{ ticket.assignedTo.name }} {{ ticket.assignedTo.lastname }}
+            {% else %}
+                Sin asignar
+            {% endif %}
+        </div>
+        <div class="aging {% if ticket.vencido %}vencido{% endif %}">
+            {% if ticket.vencido %}vencido ·{% endif %} {{ ticket.createdAt|timesince }}
+        </div>
+    </a>
+    {% endfor %}
 </div>
+{% else %}
+<div class="tk-empty">
+    <h2>{% if status_filter or priority_filter or area_filter or q %}No hay tickets con esos filtros{% else %}No hay tickets todavía{% endif %}</h2>
+    <p>
+        {% if status_filter or priority_filter or area_filter or q %}
+            Prueba limpiando los filtros o la búsqueda.
+        {% else %}
+            Crea tu primer ticket para comenzar.
+        {% endif %}
+    </p>
+    {% if not status_filter and not priority_filter and not area_filter and not q %}
+    <a href="{% url 'tickets:create' %}" class="btn btn-primary" style="margin-top:14px;">Crear ticket</a>
+    {% endif %}
+</div>
+{% endif %}
+
 {% endblock %}

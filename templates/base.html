@@ -65,6 +65,13 @@
                 0
             </span>
         </a>
+        <a href="{% url 'tickets:reportes' %}" class="nav-link {% block nav_tickets_reportes %}{% endblock %}">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 15l4-5 3 3 5-7"/>
+            </svg>
+            Reportes
+        </a>
 
         {% if request.user.is_staff %}
         <div class="nav-label">Administración</div>
@@ -165,29 +172,63 @@
 <!-- JS principal -->
 <script src="{% static 'js/main.js' %}"></script>
 {% block extra_js %}{% endblock %}
+<div id="tk-toast">
+    <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
+    <div id="tk-toast-body"></div>
+</div>
+
 <script>
-// ── Contador de notificaciones (polling cada 60 s) ─────────────────────────
+// ── Contador de notificaciones + toast en vivo (polling cada 20 s) ────────
+// Antes esto solo actualizaba el numerito de la campanita; para enterarte
+// de que te asignaron un ticket había que entrar a Notificaciones. Ahora,
+// si aparece una notificación nueva que no se había visto, sale como
+// toast arriba a la derecha, con link directo al ticket.
 (function pollNotifications() {
+    var vistaKey = 'tk_ultima_notif_vista';
+    var detailUrlTemplate = '{% url "tickets:detail" 1 %}'; // 1 es un marcador, se reemplaza abajo
+
+    function mostrarToast(n) {
+        var toast = document.getElementById('tk-toast');
+        var body  = document.getElementById('tk-toast-body');
+        if (!toast || !body || !n) return;
+        var url = n.ticket_id
+            ? detailUrlTemplate.replace(/\/1\/$/, '/' + n.ticket_id + '/')
+            : '{% url "tickets:notificaciones" %}';
+        body.innerHTML = '<a href="' + url + '"><b></b><span></span></a>';
+        body.querySelector('b').textContent = n.titulo;
+        body.querySelector('span').textContent = n.mensaje;
+        toast.classList.add('on');
+        setTimeout(function () { toast.classList.remove('on'); }, 8000);
+    }
+
     function updateBadge() {
         fetch('{% url "tickets:notificaciones_count" %}')
             .then(r => r.json())
             .then(data => {
                 var badge = document.getElementById('notif-badge');
-                if (!badge) return;
-                if (data.count > 0) {
-                    badge.textContent = data.count > 99 ? '99+' : data.count;
-                    badge.style.display = 'inline-block';
-                    // También actualizar el título de la pestaña
-                    document.title = '(' + data.count + ') ' + document.title.replace(/^\(\d+\+?\) /, '');
-                } else {
-                    badge.style.display = 'none';
-                    document.title = document.title.replace(/^\(\d+\+?\) /, '');
+                if (badge) {
+                    if (data.count > 0) {
+                        badge.textContent = data.count > 99 ? '99+' : data.count;
+                        badge.style.display = 'inline-block';
+                        document.title = '(' + data.count + ') ' + document.title.replace(/^\(\d+\+?\) /, '');
+                    } else {
+                        badge.style.display = 'none';
+                        document.title = document.title.replace(/^\(\d+\+?\) /, '');
+                    }
+                }
+
+                if (data.latest) {
+                    var ultimaVista = localStorage.getItem(vistaKey);
+                    if (String(data.latest.id) !== ultimaVista) {
+                        mostrarToast(data.latest);
+                        localStorage.setItem(vistaKey, data.latest.id);
+                    }
                 }
             })
             .catch(function(){});
     }
     updateBadge();
-    setInterval(updateBadge, 60000);
+    setInterval(updateBadge, 20000);
 }());
 </script>
 </body>

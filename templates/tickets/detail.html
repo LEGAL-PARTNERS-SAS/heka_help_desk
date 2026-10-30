@@ -1,8 +1,10 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ ticket.ticketNumber }}{% endblock %}
 {% block page_title %}{{ ticket.ticketNumber }}{% endblock %}
 {% block nav_tickets %}active{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tickets.css' %}">{% endblock %}
 
 {% block topbar_actions %}
     <a href="{% url 'tickets:list' %}" class="btn btn-ghost">← Volver</a>
@@ -12,49 +14,69 @@
 <div class="ticket-layout">
 
     <div>
-        <div class="ticket-hero card">
-            <div class="ticket-hero-top">
-                <span class="chip">Ticket {{ ticket.ticketNumber }}</span>
-                <h2>{{ ticket.title }}</h2>
-                <p class="ticket-hero-desc">{{ ticket.description }}</p>
-                <div class="ticket-hero-meta">
-                    <span class="chip">Área: {{ ticket.area }}</span>
-                    <span class="chip">Categoría: {{ ticket.category }}</span>
-                    <span class="chip">Creado por: {% if ticket.createdBy %}{{ ticket.createdBy.fullName|default:ticket.createdBy.email }}{% else %}Usuario desconocido{% endif %}</span>
-                </div>
-                <div class="ticket-meta-row">
-                    {% if ticket.status == 'abierto' %}
-                        <span class="badge badge-yellow">🟡 Abierto</span>
-                    {% elif ticket.status == 'en_proceso' %}
-                        <span class="badge badge-blue">🔵 En Proceso</span>
-                    {% elif ticket.status == 'pendiente' %}
-                        <span class="badge badge-yellow">🟠 Pendiente</span>
-                    {% elif ticket.status == 'en_espera' %}
-                        <span class="badge badge-gray">⏸ En Espera</span>
-                    {% elif ticket.status == 'escalado' %}
-                        <span class="badge badge-red">🔴 Escalado</span>
-                    {% elif ticket.status == 'resuelto' %}
-                        <span class="badge badge-green">✅ Resuelto</span>
-                    {% else %}
-                        <span class="badge badge-gray">⚫ Cerrado</span>
-                    {% endif %}
-                    {% if ticket.priority == 'critica' %}
-                        <span class="badge badge-red">Crítica</span>
-                    {% elif ticket.priority == 'alta' %}
-                        <span class="badge badge-yellow">Alta</span>
-                    {% elif ticket.priority == 'media' %}
-                        <span class="badge badge-blue">Media</span>
-                    {% else %}
-                        <span class="badge badge-gray">Baja</span>
-                    {% endif %}
-                </div>
+        <div class="tk-hero">
+            <div class="pills">
+                <span class="pill dot pill-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+                <span class="pill pill-{{ ticket.priority }}">{{ ticket.get_priority_display }}</span>
+                {% if vencido %}<span class="pill pill-escalado">Vencido</span>{% endif %}
             </div>
+            <h2>{{ ticket.title }}</h2>
+            <p class="desc">{{ ticket.description }}</p>
+            <div class="meta">
+                <span>Área: <b>{{ ticket.area }}</b></span>
+                <span>Categoría: <b>{{ ticket.category }}</b></span>
+                <span>Creado por: <b>{% if ticket.createdBy %}{{ ticket.createdBy.fullName|default:ticket.createdBy.email }}{% else %}Usuario desconocido{% endif %}</b></span>
+                <span>Antigüedad: <b>{{ ticket.createdAt|timesince }}</b></span>
+            </div>
+
+            {% if puede_asignar and ticket.status != 'cerrado' %}
+            <form method="post" action="{% url 'tickets:update' ticket.pk %}" class="tk-quickform">
+                {% csrf_token %}
+                <div class="fgroup">
+                    <label>Cambiar estado</label>
+                    <select name="status">
+                        <option value="abierto"    {% if ticket.status == 'abierto' %}selected{% endif %}>Abierto</option>
+                        <option value="en_proceso" {% if ticket.status == 'en_proceso' %}selected{% endif %}>En proceso</option>
+                        <option value="pendiente"  {% if ticket.status == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                        <option value="en_espera"  {% if ticket.status == 'en_espera' %}selected{% endif %}>En espera</option>
+                        <option value="escalado"   {% if ticket.status == 'escalado' %}selected{% endif %}>Escalado</option>
+                        <option value="resuelto"   {% if ticket.status == 'resuelto' %}selected{% endif %}>Resuelto</option>
+                        <option value="cerrado"    {% if ticket.status == 'cerrado' %}selected{% endif %}>Cerrado</option>
+                    </select>
+                </div>
+                <div class="fgroup">
+                    <label>Prioridad</label>
+                    <select name="priority">
+                        <option value="baja"    {% if ticket.priority == 'baja' %}selected{% endif %}>Baja</option>
+                        <option value="media"   {% if ticket.priority == 'media' %}selected{% endif %}>Media</option>
+                        <option value="alta"    {% if ticket.priority == 'alta' %}selected{% endif %}>Alta</option>
+                        <option value="critica" {% if ticket.priority == 'critica' %}selected{% endif %}>Crítica</option>
+                    </select>
+                </div>
+                <div class="fgroup">
+                    <label>Asignar a</label>
+                    <select name="assigned_to">
+                        <option value="">Sin asignar</option>
+                        {% for ag in agentes %}
+                            <option value="{{ ag.pk }}" {% if ticket.assignedTo_id == ag.pk %}selected{% endif %}>
+                                {{ ag.name }} {{ ag.lastname }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </form>
+            {% elif ticket.assignedTo %}
+            <div class="meta" style="border-top:none;padding-top:0;">
+                <span>Asignado a: <b>{{ ticket.assignedTo.name }} {{ ticket.assignedTo.lastname }}</b></span>
+            </div>
+            {% endif %}
         </div>
 
         <div class="card spaced-card">
             <div class="card-title">Comentarios</div>
 
-            {% for comment in ticket.comments.all %}
+            {% for comment in comments %}
             <div class="comment-item">
                 <div class="comment-header">
                     <span class="avatar-badge">{{ comment.user.name|first|upper }}{{ comment.user.lastname|first|upper }}</span>
@@ -83,12 +105,24 @@
 
     <aside class="ticket-sidebar">
         <div class="card">
+            <div class="card-title">Línea de tiempo</div>
+            <div class="tk-timeline">
+                <div class="tk-tl-item">
+                    <div class="tk-tl-text">Creado por <b>{% if ticket.createdBy %}{{ ticket.createdBy.name }} {{ ticket.createdBy.lastname }}{% else %}usuario desconocido{% endif %}</b></div>
+                    <div class="tk-tl-meta">{{ ticket.createdAt|date:"d/m/Y H:i" }}</div>
+                </div>
+                {% for h in history %}
+                <div class="tk-tl-item {% if h.newStatus == 'escalado' %}esc{% elif h.newStatus == 'resuelto' or h.newStatus == 'cerrado' %}res{% endif %}">
+                    <div class="tk-tl-text">→ <b>{{ h.get_newStatus_display }}</b>, por {{ h.changedBy.name }} {{ h.changedBy.lastname }}</div>
+                    <div class="tk-tl-meta">{{ h.changedAt|date:"d/m/Y H:i" }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
             <div class="card-title">Detalles</div>
             <div class="ticket-info-grid">
-                <div class="ticket-info-item">
-                    <span class="ticket-info-label">Creado por</span>
-                    <span class="ticket-info-value">{% if ticket.createdBy %}{{ ticket.createdBy.fullName|default:ticket.createdBy.email }}{% else %}Usuario desconocido{% endif %}</span>
-                </div>
                 <div class="ticket-info-item">
                     <span class="ticket-info-label">Asignado a</span>
                     <span class="ticket-info-value">{% if ticket.assignedTo %}{{ ticket.assignedTo.fullName|default:ticket.assignedTo.email }}{% else %}Sin asignar{% endif %}</span>
@@ -97,14 +131,6 @@
                     <span class="ticket-info-label">Fecha de creación</span>
                     <span class="ticket-info-value">{{ ticket.createdAt|date:"d/m/Y H:i" }}</span>
                 </div>
-                <div class="ticket-info-item">
-                    <span class="ticket-info-label">Estado actual</span>
-                    <span class="ticket-info-value">{{ ticket.get_status_display }}</span>
-                </div>
-                <div class="ticket-info-item">
-                    <span class="ticket-info-label">Prioridad</span>
-                    <span class="ticket-info-value">{{ ticket.get_priority_display }}</span>
-                </div>
                 {% if ticket.closedAt %}
                 <div class="ticket-info-item">
                     <span class="ticket-info-label">Fecha de cierre</span>
@@ -112,16 +138,10 @@
                 </div>
                 <div class="ticket-info-item">
                     <span class="ticket-info-label">Tiempo de resolución</span>
-                    <span class="ticket-info-value">⏱ {{ ticket.resolution_time|default:"—" }}</span>
+                    <span class="ticket-info-value">{{ ticket.resolution_time|default:"—" }}</span>
                 </div>
                 {% endif %}
             </div>
-
-            {% if puede_gestionar and ticket.status != 'cerrado' %}
-            <div class="section-footer">
-                <a href="{% url 'tickets:update' ticket.pk %}" class="btn btn-ghost w-full">Editar Ticket</a>
-            </div>
-            {% endif %}
         </div>
     </aside>
 </div>

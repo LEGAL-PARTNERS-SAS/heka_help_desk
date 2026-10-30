@@ -14,6 +14,7 @@ Si cambias un nombre en la BD, actualiza los diccionarios aquí.
 """
 
 from functools import wraps
+from django.conf import settings
 from django.shortcuts import redirect
 from django.contrib import messages
 
@@ -33,17 +34,20 @@ AREA_ADMIN_ROLE_MAP = {
 
 # Agente → área(s) a las que responde tickets
 AGENT_ROLE_MAP = {
-    'Agente Administración': ['Administracion'],
-    'Agente Finance':        ['Finance'],
-    'Agente Sistemas':       ['Sistemas'],
+    'Agente Administración':    ['Administracion'],
+    'Agente Finance':           ['Finance'],
+    'Agente Sistemas':          ['Sistemas'],
+    'Agente Talento Humano':    ['Talento Humano'],
+    'Agente Archivo':           ['Archivo'],
 }
 
 USER_ROLE_NAMES = {
     'Usuario',
 }
 
-# Contraseña maestra requerida para crear o eliminar un super admin
-SUPERADMIN_MASTER_PASSWORD = 'Heka@2026'
+# Contraseña maestra requerida para crear o eliminar un super admin.
+# Vive en settings (y en el .env del servidor), nunca en texto plano aquí.
+SUPERADMIN_MASTER_PASSWORD = settings.SUPERADMIN_MASTER_PASSWORD
 
 
 # ─── Helpers básicos ──────────────────────────────────────────────────────────

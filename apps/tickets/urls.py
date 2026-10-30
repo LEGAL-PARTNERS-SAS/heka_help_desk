@@ -12,4 +12,5 @@ urlpatterns = [
     path('api/categorias/<int:area_id>/',   views.categoriasPorAreaView,   name='categorias_por_area'),
     path('notificaciones/',                 views.notificacionesView,      name='notificaciones'),
     path('notificaciones/count/',           views.notificacionesCountView, name='notificaciones_count'),
+    path('reportes/',                       views.reportesView,            name='reportes'),
 ]

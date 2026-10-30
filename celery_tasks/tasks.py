@@ -6,6 +6,22 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def sendHtmlMailTask(self, to, subject, html_body, plain_fallback=''):
+    """Despacha un correo HTML ya armado (ver apps/core/emails.py::
+    send_html_mail) fuera del hilo de la petición. Antes cada destinatario
+    de una notificación de ticket se mandaba en serie, con una conexión
+    SMTP nueva por persona, bloqueando la respuesta del navegador hasta
+    que el último correo salía — con un área de 4-5 agentes, varios
+    segundos por cada ticket creado/actualizado/comentado."""
+    from apps.core.emails import send_html_mail
+
+    ok = send_html_mail(to=to, subject=subject, html_body=html_body, plain_fallback=plain_fallback)
+    if not ok:
+        raise self.retry(exc=RuntimeError(f'send_html_mail devolvio False para {to}'))
+    return {'status': 'ok', 'to': to}
+
+
 @shared_task(bind=True, max_retries=3)
 def sendTicketNotificationEmail(self, recipientEmail, ticketNumber, subject, message):
     try:

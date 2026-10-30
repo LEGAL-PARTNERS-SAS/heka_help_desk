@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Reportes{% endblock %}
+{% block page_title %}Reportes{% endblock %}
+{% block nav_tickets_reportes %}active{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tickets.css' %}">{% endblock %}
+
+{% block content %}
+
+<div class="tk-kpis">
+    <div class="tk-kpi"><div class="n">{{ total }}</div><div class="l">Tickets totales</div></div>
+    <div class="tk-kpi ok"><div class="n">{% if resolucion_prom_dias %}{{ resolucion_prom_dias }}d{% else %}—{% endif %}</div><div class="l">Resolución promedio</div></div>
+    <div class="tk-kpi bad"><div class="n">{{ pct_sin_asignar }}%</div><div class="l">Sin asignar &gt; 24h</div></div>
+    <div class="tk-kpi warn"><div class="n">{{ reabiertos }}</div><div class="l">Reabiertos</div></div>
+</div>
+
+<div class="tk-rep-grid">
+    <div class="card">
+        <div class="card-title">Tickets por área</div>
+        <div class="tk-bars" style="margin-top:12px;">
+            {% for row in por_area %}
+            <div class="tk-bar-row">
+                <span class="lbl">{{ row.area__areaName }}</span>
+                <div class="tk-bar-track"><div class="tk-bar-fill" style="width:{% widthratio row.n total 100 %}%"></div></div>
+                <span class="val">{{ row.n }}</span>
+            </div>
+            {% empty %}
+            <p class="ticket-subtext">Sin tickets todavía.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Distribución por estado</div>
+        <div class="tk-stack" style="margin-top:12px;">
+            {% for e in estados_data %}
+            <span style="width:{% widthratio e.n total 100 %}%;background:{{ e.color }}"></span>
+            {% endfor %}
+        </div>
+        <div class="tk-legend">
+            {% for e in estados_data %}
+            <span><i style="background:{{ e.color }}"></i>{{ e.label }} {{ e.n }}</span>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+    <div class="card-title">Carga por agente</div>
+    <table class="tk-agentes" style="margin-top:10px;">
+        <thead><tr><th>Agente</th><th>Área</th><th>Asignados</th><th>Resolución prom.</th></tr></thead>
+        <tbody>
+            {% for ag in carga_agentes %}
+            <tr>
+                <td>{{ ag.nombre }}</td>
+                <td>{{ ag.area }}</td>
+                <td>{{ ag.asignados }}</td>
+                <td>{% if ag.prom %}{{ ag.prom }}d{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="ticket-subtext">Todavía no hay tickets asignados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

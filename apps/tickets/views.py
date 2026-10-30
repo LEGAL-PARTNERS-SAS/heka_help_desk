@@ -5,14 +5,19 @@ apps/tickets/views.py — con notificaciones, filtros y validación cédula
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from datetime import datetime
+from django.db.models import Q, Count
+from django.utils import timezone
+from datetime import datetime, timedelta
 
-from .models import Ticket, TicketCategory, TicketComment, TicketStatusHistory
+from .models import Ticket, TicketCategory, TicketComment, TicketStatusHistory, TicketStatusChoices
 from apps.core.models import Area
 from apps.core.permissions import (
     is_superadmin, is_area_admin, is_agent,
     get_allowed_area_names, can_assign_tickets, get_assignable_agents,
 )
+
+CERRADOS = (TicketStatusChoices.RESUELTO, TicketStatusChoices.CERRADO)
+SLA_VENCIDO_HORAS = 48
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -46,11 +51,32 @@ def _can_manage_ticket(user, ticket):
     return False
 
 
+def _agentes_asignables_para(ticket, user):
+    """agentes (queryset), puede_asignar (bool) para el ticket dado, con el
+    mismo criterio que ya usaba ticketUpdateView -- reusado ahora tambien
+    por ticketDetailView para el cambio de estado/asignacion en linea."""
+    puede_asignar = can_assign_tickets(user)
+    if not puede_asignar:
+        return None, False
+
+    agentes = get_assignable_agents(ticket.area.areaName, user)
+    if is_area_admin(user) or is_superadmin(user):
+        from apps.users.models import User as UserModel
+        admin_qs = UserModel.objects.filter(pk=user.pk)
+        agentes = (agentes | admin_qs).distinct()
+    return agentes, puede_asignar
+
+
 def _notificar_ticket(ticket, tipo, titulo, mensaje, actor):
-    """Crea notificaciones internas para el área del ticket."""
+    """Crea notificaciones internas para el área del ticket y, con los
+    mismos destinatarios, manda el correo (ver apps/tickets/emails.py —
+    antes esta función solo dejaba la notificación en campanita, y a quien
+    no tuviera la pestaña abierta se le podía pasar por alto un ticket
+    nuevo o una respuesta)."""
+    destinatarios = []
     try:
         from apps.core.models import Notification
-        Notification.crear_para_area(
+        destinatarios += Notification.crear_para_area(
             area_name=ticket.area.areaName,
             tipo=tipo,
             titulo=titulo,
@@ -67,6 +93,7 @@ def _notificar_ticket(ticket, tipo, titulo, mensaje, actor):
                 mensaje=mensaje,
                 ticket=ticket,
             )
+            destinatarios.append(ticket.createdBy)
         # Notificar al agente asignado si existe y no es el actor
         if ticket.assignedTo and ticket.assignedTo != actor:
             Notification.crear(
@@ -76,26 +103,71 @@ def _notificar_ticket(ticket, tipo, titulo, mensaje, actor):
                 mensaje=mensaje,
                 ticket=ticket,
             )
+            destinatarios.append(ticket.assignedTo)
     except Exception:
         pass  # Notificaciones no bloquean el flujo principal
+
+    try:
+        from apps.tickets.emails import enviar_notificacion_ticket
+        vistos = set()
+        unicos = [u for u in destinatarios if not (u.pk in vistos or vistos.add(u.pk))]
+        enviar_notificacion_ticket(unicos, tipo, titulo, mensaje, ticket)
+    except Exception:
+        pass  # El correo tampoco debe tumbar el flujo principal
 
 
 # ─── Vistas ───────────────────────────────────────────────────────────────────
 
 @login_required
 def ticketListView(request):
-    tickets = _tickets_for_user(request.user).order_by('-createdAt')
+    base_qs = _tickets_for_user(request.user).select_related('area', 'createdBy', 'assignedTo')
 
     status_filter   = request.GET.get('status', '')
     priority_filter = request.GET.get('priority', '')
     area_filter     = request.GET.get('area', '')
+    q               = request.GET.get('q', '').strip()
+    vista           = request.GET.get('vista', '')   # chip rápido: vencidos / criticos
 
+    tickets = base_qs.order_by('-createdAt')
     if status_filter:
         tickets = tickets.filter(status=status_filter)
     if priority_filter:
         tickets = tickets.filter(priority=priority_filter)
     if area_filter:
         tickets = tickets.filter(area__areaId=area_filter)
+    if q:
+        tickets = tickets.filter(
+            Q(title__icontains=q) | Q(ticketNumber__icontains=q) |
+            Q(createdBy__name__icontains=q) | Q(createdBy__lastname__icontains=q)
+        )
+
+    ahora = timezone.now()
+    corte_vencido = ahora - timedelta(hours=SLA_VENCIDO_HORAS)
+
+    # KPIs sobre el universo visible del usuario (sin los filtros de arriba,
+    # para que la cabecera no cambie cuando se filtra la tabla).
+    activos_qs   = base_qs.exclude(status__in=CERRADOS)
+    kpi_activos  = activos_qs.count()
+    kpi_criticos_sin_asignar = activos_qs.filter(priority='critica', assignedTo__isnull=True).count()
+    kpi_vencidos = activos_qs.filter(createdAt__lt=corte_vencido).count()
+
+    resueltos = base_qs.filter(closedAt__isnull=False)
+    if resueltos.exists():
+        total_horas = sum((t.closedAt - t.createdAt).total_seconds() / 3600 for t in resueltos)
+        kpi_resolucion_dias = round(total_horas / resueltos.count() / 24, 1)
+    else:
+        kpi_resolucion_dias = None
+
+    if vista == 'vencidos':
+        tickets = tickets.filter(createdAt__lt=corte_vencido).exclude(status__in=CERRADOS)
+    elif vista == 'criticos':
+        tickets = tickets.filter(priority='critica').exclude(status__in=CERRADOS)
+    elif vista == 'activos':
+        tickets = tickets.exclude(status__in=CERRADOS)
+
+    tickets = list(tickets)
+    for t in tickets:
+        t.vencido = (ahora - t.createdAt) > timedelta(hours=SLA_VENCIDO_HORAS) and t.status not in CERRADOS
 
     if is_superadmin(request.user):
         areas_disponibles = Area.objects.all()
@@ -110,7 +182,13 @@ def ticketListView(request):
         'status_filter':     status_filter,
         'priority_filter':   priority_filter,
         'area_filter':       area_filter,
+        'q':                 q,
+        'vista':             vista,
         'puede_gestionar':   is_superadmin(request.user) or is_area_admin(request.user) or is_agent(request.user),
+        'kpi_activos':            kpi_activos,
+        'kpi_criticos_sin_asignar': kpi_criticos_sin_asignar,
+        'kpi_vencidos':           kpi_vencidos,
+        'kpi_resolucion_dias':    kpi_resolucion_dias,
     })
 
 
@@ -175,12 +253,19 @@ def ticketDetailView(request, pk):
 
     comments = ticket.comments.select_related('user').order_by('createdAt')
     history  = ticket.statusHistory.select_related('changedBy').order_by('-changedAt')
+    agentes, puede_asignar = _agentes_asignables_para(ticket, request.user)
+
+    antiguedad_horas = (timezone.now() - ticket.createdAt).total_seconds() / 3600
+    vencido = antiguedad_horas > SLA_VENCIDO_HORAS and ticket.status not in CERRADOS
 
     return render(request, 'tickets/detail.html', {
         'ticket':          ticket,
         'comments':        comments,
         'history':         history,
         'puede_gestionar': _can_manage_ticket(request.user, ticket),
+        'agentes':         agentes,
+        'puede_asignar':   puede_asignar,
+        'vencido':         vencido,
     })
 
 
@@ -193,22 +278,7 @@ def ticketUpdateView(request, pk):
         messages.error(request, 'No tienes permiso para modificar este ticket.')
         return redirect('tickets:detail', pk=pk)
 
-    puede_asignar = can_assign_tickets(user)
-
-    # Admins de área pueden asignarse a sí mismos además de a los agentes
-    if puede_asignar:
-        agentes = get_assignable_agents(ticket.area.areaName, user)
-        # Si el admin de área está en el área del ticket, incluirse a sí mismo
-        if is_area_admin(user) or is_superadmin(user):
-            from apps.users.models import User as UserModel
-            from django.db.models import Q
-            # Incluir al admin actual como opción de asignación
-            admin_qs = UserModel.objects.filter(pk=user.pk)
-            from django.db.models import QuerySet
-            # Combinar agentes + el propio admin
-            agentes = (agentes | admin_qs).distinct()
-    else:
-        agentes = None
+    agentes, puede_asignar = _agentes_asignables_para(ticket, user)
 
     if request.method == 'POST':
         old_status = ticket.status
@@ -366,11 +436,105 @@ def notificacionesView(request):
 
 @login_required
 def notificacionesCountView(request):
-    """Endpoint JSON para el contador de notificaciones en el navbar."""
+    """Endpoint JSON para el contador de notificaciones en el navbar y para
+    el toast de "te asignaron un ticket" -- devuelve también la más
+    reciente sin leer, para que el JS decida si ya la mostró o no."""
     from django.http import JsonResponse
     from apps.core.models import Notification
 
-    count = Notification.objects.filter(
-        destinatario=request.user, leida=False
-    ).count()
-    return JsonResponse({'count': count})
+    no_leidas = Notification.objects.filter(destinatario=request.user, leida=False)
+    count = no_leidas.count()
+    ultima = no_leidas.order_by('-createdAt').first()
+
+    return JsonResponse({
+        'count': count,
+        'latest': {
+            'id':        ultima.notifId,
+            'titulo':    ultima.titulo,
+            'mensaje':   ultima.mensaje,
+            'ticket_id': ultima.ticket_id,
+        } if ultima else None,
+    })
+
+
+@login_required
+def reportesView(request):
+    """Métricas reales sobre los mismos tickets que ya ve este usuario en
+    la lista -- nada aquí viene de una tabla nueva, son agregados sobre
+    Ticket/TicketStatusHistory."""
+    from apps.users.models import User
+
+    tickets = _tickets_for_user(request.user)
+    total = tickets.count()
+    ahora = timezone.now()
+
+    por_area = list(
+        tickets.values('area__areaName')
+        .annotate(n=Count('ticketId'))
+        .order_by('-n')
+    )
+
+    estado_dict = {
+        row['status']: row['n']
+        for row in tickets.values('status').annotate(n=Count('ticketId'))
+    }
+    ESTADOS_COLOR = {
+        'abierto':    'var(--accent)',
+        'en_proceso': 'var(--accent-h)',
+        'pendiente':  'var(--warning)',
+        'en_espera':  'var(--muted2)',
+        'escalado':   'var(--danger)',
+        'resuelto':   'var(--success)',
+        'cerrado':    'var(--muted2)',
+    }
+    estados_data = [
+        {'estado': val, 'label': label, 'color': ESTADOS_COLOR[val], 'n': estado_dict.get(val, 0)}
+        for val, label in TicketStatusChoices.choices
+        if estado_dict.get(val, 0) > 0
+    ]
+
+    resueltos = tickets.filter(closedAt__isnull=False)
+    if resueltos.exists():
+        total_horas = sum((t.closedAt - t.createdAt).total_seconds() / 3600 for t in resueltos)
+        resolucion_prom_dias = round(total_horas / resueltos.count() / 24, 1)
+    else:
+        resolucion_prom_dias = None
+
+    sin_asignar_24h = (
+        tickets.filter(assignedTo__isnull=True, createdAt__lt=ahora - timedelta(hours=24))
+        .exclude(status__in=CERRADOS).count()
+    )
+    pct_sin_asignar = round(100 * sin_asignar_24h / total) if total else 0
+
+    reabiertos = (
+        TicketStatusHistory.objects.filter(ticket__in=tickets, oldStatus__in=CERRADOS)
+        .values('ticket').distinct().count()
+    )
+
+    carga_agentes = []
+    agentes_con_tickets = User.objects.filter(ticketsAssigned__in=tickets).distinct().select_related('area')
+    for ag in agentes_con_tickets:
+        asignados = tickets.filter(assignedTo=ag)
+        resueltos_ag = asignados.filter(closedAt__isnull=False)
+        if resueltos_ag.exists():
+            h = sum((t.closedAt - t.createdAt).total_seconds() / 3600 for t in resueltos_ag)
+            prom = round(h / resueltos_ag.count() / 24, 1)
+        else:
+            prom = None
+        carga_agentes.append({
+            'nombre':    f'{ag.name} {ag.lastname}'.strip(),
+            'area':      ag.area.areaName if ag.area else '—',
+            'asignados': asignados.count(),
+            'prom':      prom,
+        })
+    carga_agentes.sort(key=lambda x: -x['asignados'])
+
+    return render(request, 'tickets/reportes.html', {
+        'total':                 total,
+        'por_area':              por_area,
+        'estados_data':          estados_data,
+        'resolucion_prom_dias':  resolucion_prom_dias,
+        'pct_sin_asignar':       pct_sin_asignar,
+        'reabiertos':            reabiertos,
+        'carga_agentes':         carga_agentes,
+    })
