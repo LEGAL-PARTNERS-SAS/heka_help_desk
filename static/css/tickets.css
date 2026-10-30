@@ -37,8 +37,8 @@
   background:var(--surface2);color:var(--text);font-family:'Poppins',sans-serif;}
 
 /* ── pills de estado/prioridad (reemplazan los emoji) ── */
-.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;
-  font-size:11.5px;font-weight:600;white-space:nowrap;}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;
+  font-size:12.5px;font-weight:600;white-space:nowrap;}
 .pill.dot::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;}
 .pill-abierto{background:var(--accent-bg);color:var(--accent);}
 .pill-en_proceso{background:var(--accent-bg);color:var(--accent-h);}
@@ -54,9 +54,10 @@
 
 /* ── lista de tickets como tarjetas, no tabla plana ── */
 .tk-list{display:flex;flex-direction:column;gap:10px;}
-.tk-row{display:grid;grid-template-columns:3fr 1fr 1fr 1fr 140px 110px;gap:14px;align-items:center;
+.tk-row{display:grid;grid-template-columns:minmax(220px,1fr) 130px 150px 110px 170px 100px;
+  gap:16px;align-items:center;
   background:var(--surface);border:1px solid var(--border);border-radius:11px;
-  padding:14px 18px;text-decoration:none;color:inherit;position:relative;overflow:hidden;
+  padding:16px 20px;text-decoration:none;color:inherit;position:relative;overflow:hidden;
   transition:border-color .15s,transform .12s,box-shadow .15s;}
 .tk-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--pbar,var(--border));}
 .tk-row[data-priority="critica"]{--pbar:var(--danger);}
@@ -66,15 +67,15 @@
 .tk-row:hover{border-color:var(--accent);box-shadow:var(--shadow);transform:translateY(-1px);}
 @media(max-width:980px){.tk-row{grid-template-columns:1fr;gap:8px;}}
 .tk-row .main{min-width:0;}
-.tk-row .num{font-size:11px;color:var(--muted2);font-variant-numeric:tabular-nums;font-weight:600;}
-.tk-row .ttl{font-weight:600;font-size:14px;margin-top:2px;
+.tk-row .num{font-size:11.5px;color:var(--muted2);font-variant-numeric:tabular-nums;font-weight:600;}
+.tk-row .ttl{font-weight:600;font-size:15.5px;margin-top:3px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.tk-row .area{font-size:12.5px;color:var(--muted);}
-.tk-row .assignee{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);}
+.tk-row .area{font-size:13.5px;color:var(--muted);}
+.tk-row .assignee{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);}
 .tk-row .assignee.empty{color:var(--muted2);font-style:italic;}
-.tk-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent-bg);color:var(--accent-h);
-  font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none;}
-.tk-row .aging{font-size:12px;color:var(--muted2);font-variant-numeric:tabular-nums;text-align:right;}
+.tk-avatar{width:27px;height:27px;border-radius:50%;background:var(--accent-bg);color:var(--accent-h);
+  font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none;}
+.tk-row .aging{font-size:13px;color:var(--muted2);font-variant-numeric:tabular-nums;text-align:right;}
 .tk-row .aging.vencido{color:var(--danger);font-weight:700;}
 
 .tk-empty{background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);
@@ -144,3 +145,49 @@ table.tk-agentes tr:last-child td{border-bottom:none;}
 #tk-toast a{color:inherit;text-decoration:none;}
 @keyframes tkToastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){#tk-toast{animation:none;}}
+
+/* ── mapa de calor: asignación × prioridad (solo admins) ──
+   Escala verde→amarillo→naranja→rojo (semáforo de severidad), a propósito
+   fuera de los tonos de marca -- el color en sí lo calcula la vista en
+   Python (_color_mapa_calor), aquí solo va el resto del componente. */
+.tk-heatmap-wrap{overflow-x:auto;}
+table.tk-heatmap{width:100%;border-collapse:separate;border-spacing:4px;font-size:12.5px;}
+.tk-heatmap th{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted2);padding:0 6px 6px;}
+.tk-heatmap .row-label{text-align:left;padding:6px 10px;font-weight:600;white-space:nowrap;color:var(--text);}
+.tk-heatmap .row-label.muted{color:var(--muted2);font-weight:500;font-style:italic;}
+.tk-heat-cell{min-width:58px;height:38px;text-align:center;border-radius:7px;cursor:pointer;
+  font-variant-numeric:tabular-nums;font-weight:700;color:var(--text);
+  transition:outline-color .12s,transform .12s;outline:2px solid transparent;outline-offset:-2px;}
+.tk-heat-cell:hover{outline-color:var(--accent-h);transform:scale(1.05);}
+.tk-heat-cell:active{transform:scale(.97);}
+.tk-heat-cell .on-dark{color:#fff;}
+.tk-heat-total{text-align:center;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;}
+.tk-heat-legend{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:11px;color:var(--muted2);}
+.tk-heat-ramp{flex:none;width:160px;height:10px;border-radius:5px;
+  background:linear-gradient(90deg, rgb(34,197,94), rgb(250,204,21), rgb(249,115,22), rgb(239,68,68));}
+
+/* ── popup del mapa de calor ── */
+.tk-modal-overlay{position:fixed;inset:0;background:rgba(13,17,23,.45);backdrop-filter:blur(2px);
+  display:none;align-items:center;justify-content:center;z-index:600;padding:20px;
+  animation:tkFadeIn .18s both;}
+.tk-modal-overlay.on{display:flex;}
+@keyframes tkFadeIn{from{opacity:0}to{opacity:1}}
+.tk-modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  width:100%;max-width:440px;max-height:72vh;display:flex;flex-direction:column;
+  box-shadow:var(--shadow-lg);animation:tkPopIn .22s cubic-bezier(.34,1.3,.64,1) both;}
+@keyframes tkPopIn{from{opacity:0;transform:scale(.95) translateY(6px)}to{opacity:1;transform:none}}
+.tk-modal-head{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px;border-bottom:1px solid var(--border);flex:none;}
+.tk-modal-head h4{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:15px;margin:0;}
+.tk-modal-close{width:28px;height:28px;border-radius:8px;background:var(--surface2);
+  color:var(--muted);font-size:13px;display:flex;align-items:center;justify-content:center;flex:none;}
+.tk-modal-close:hover{color:var(--text);background:var(--border);}
+.tk-modal-body{overflow-y:auto;padding:8px;}
+.tk-modal-row{display:block;padding:10px 12px;border-radius:9px;text-decoration:none;color:inherit;}
+.tk-modal-row:hover{background:var(--surface2);}
+.tk-modal-row-main{display:flex;align-items:baseline;gap:8px;}
+.tk-modal-num{font-size:11px;color:var(--muted2);font-variant-numeric:tabular-nums;font-weight:600;flex:none;}
+.tk-modal-ttl{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tk-modal-meta{font-size:11.5px;color:var(--muted2);margin-top:2px;}
+@media(prefers-reduced-motion:reduce){.tk-modal-overlay,.tk-modal{animation:none;}}

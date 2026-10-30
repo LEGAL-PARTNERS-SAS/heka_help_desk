@@ -173,23 +173,27 @@ def get_assignable_agents(ticket_area_name, assigning_user):
     Devuelve el queryset de agentes que pueden ser asignados a un ticket.
 
     - El asignador debe ser admin de área o super admin.
-    - Solo aparecen agentes cuyo rol de agente cubre el área del ticket.
-    - El admin de área solo puede asignar agentes de SUS propias áreas.
+    - Aparecen tanto los agentes de esa área (AGENT_ROLE_MAP) como el admin
+      de esa área (AREA_ADMIN_ROLE_MAP) -- antes solo entraban los agentes,
+      así que un área sin agente propio (como Sistemas) nunca mostraba a
+      nadie más que "quien está asignando en ese momento"; su admin de área
+      quedaba fuera de su propia lista de escalamiento.
+    - El admin de área solo puede asignar agentes/admins de SUS propias áreas.
     """
     from apps.users.models import User
 
-    # Roles de agente que cubren el área del ticket
-    valid_agent_roles = [
+    # Roles (agente o admin de área) que cubren el área del ticket
+    valid_roles = [
         role_name
-        for role_name, areas in AGENT_ROLE_MAP.items()
+        for role_name, areas in {**AGENT_ROLE_MAP, **AREA_ADMIN_ROLE_MAP}.items()
         if ticket_area_name in areas
     ]
 
-    if not valid_agent_roles:
+    if not valid_roles:
         return User.objects.none()
 
     qs = User.objects.filter(
-        role__roleName__in=valid_agent_roles,
+        role__roleName__in=valid_roles,
         status='activo',
     ).select_related('role', 'area')
 

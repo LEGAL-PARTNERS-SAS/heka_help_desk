@@ -9,7 +9,8 @@
 {% endblock %}
 
 {% block content %}
-<div style="max-width: 680px;">
+<div class="ticket-layout">
+  <div>
     <div class="card">
         <form method="post">
             {% csrf_token %}
@@ -75,5 +76,26 @@
             </div>
         </form>
     </div>
+  </div>
+
+  <aside class="ticket-sidebar">
+    <div class="card">
+        <div class="card-title">Editando</div>
+        <div class="ticket-info-grid">
+            <div class="ticket-info-item">
+                <span class="ticket-info-label">Ticket</span>
+                <span class="ticket-info-value">{{ ticket.ticketNumber }}</span>
+            </div>
+            <div class="ticket-info-item">
+                <span class="ticket-info-label">Título</span>
+                <span class="ticket-info-value">{{ ticket.title }}</span>
+            </div>
+            <div class="ticket-info-item">
+                <span class="ticket-info-label">Área</span>
+                <span class="ticket-info-value">{{ ticket.area }}</span>
+            </div>
+        </div>
+    </div>
+  </aside>
 </div>
 {% endblock %}

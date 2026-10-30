@@ -5,7 +5,8 @@
 {% block nav_create %}active{% endblock %}
 
 {% block content %}
-<div style="max-width: 680px;">
+<div class="ticket-layout">
+  <div>
     <div class="card">
         <form method="post" id="ticket-form">
             {% csrf_token %}
@@ -82,6 +83,27 @@
             </div>
         </form>
     </div>
+  </div>
+
+  <aside class="ticket-sidebar">
+    <div class="card">
+        <div class="card-title">Antes de enviarlo</div>
+        <div class="ticket-info-grid">
+            <div class="ticket-info-item">
+                <span class="ticket-info-label">Título</span>
+                <span class="ticket-info-value">Describe el síntoma concreto, no la causa — eso ayuda a quien lo recibe a encontrarlo después.</span>
+            </div>
+            <div class="ticket-info-item">
+                <span class="ticket-info-label">Área y categoría</span>
+                <span class="ticket-info-value">Definen a quién le llega la notificación. Si no encuentras una categoría clara, usa "Otras" y detalla en la descripción.</span>
+            </div>
+            <div class="ticket-info-item">
+                <span class="ticket-info-label">Prioridad</span>
+                <span class="ticket-info-value">Crítica/Alta se revisan primero — resérvalas para lo que de verdad bloquea tu trabajo.</span>
+            </div>
+        </div>
+    </div>
+  </aside>
 </div>
 
 <script>

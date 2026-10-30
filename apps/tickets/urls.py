@@ -13,4 +13,5 @@ urlpatterns = [
     path('notificaciones/',                 views.notificacionesView,      name='notificaciones'),
     path('notificaciones/count/',           views.notificacionesCountView, name='notificaciones_count'),
     path('reportes/',                       views.reportesView,            name='reportes'),
+    path('reportes/heatmap-detalle/',       views.heatmapDetalleView,      name='heatmap_detalle'),
 ]

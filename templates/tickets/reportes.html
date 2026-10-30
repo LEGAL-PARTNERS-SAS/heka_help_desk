@@ -64,4 +64,116 @@
     </table>
 </div>
 
+{% if heatmap %}
+<div class="card" style="margin-top:16px;">
+    <div class="card-title">Mapa de calor: asignación × prioridad</div>
+    <p class="ticket-subtext" style="margin:2px 0 14px;">Quién concentra qué tanta carga de cada severidad — más oscuro, más tickets.</p>
+    <div class="tk-heatmap-wrap">
+        <table class="tk-heatmap">
+            <thead>
+                <tr>
+                    <th></th>
+                    {% for col in heatmap.columnas %}<th>{{ col }}</th>{% endfor %}
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in heatmap.filas %}
+                <tr>
+                    <th class="row-label {% if fila.nombre == 'Sin asignar' %}muted{% endif %}">{{ fila.nombre }}</th>
+                    {% for celda in fila.celdas %}
+                    <td class="tk-heat-cell"
+                        style="background:{{ celda.color }};"
+                        title="{{ fila.nombre }} · {{ celda.prioridad|capfirst }}: {{ celda.n }} ticket{{ celda.n|pluralize }} — clic para ver"
+                        data-assigned="{{ fila.asignado_id }}"
+                        data-priority="{{ celda.prioridad }}"
+                        data-label="{{ fila.nombre }} · {{ celda.prioridad|capfirst }}">
+                        {% if celda.n %}<span class="{% if celda.texto_claro %}on-dark{% endif %}">{{ celda.n }}</span>{% endif %}
+                    </td>
+                    {% endfor %}
+                    <td class="tk-heat-total">{{ fila.total }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="ticket-subtext">Todavía no hay tickets para cruzar.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="tk-heat-legend">
+        <span>0</span>
+        <div class="tk-heat-ramp"></div>
+        <span>{{ heatmap.max }}</span>
+    </div>
+</div>
+{% endif %}
+
+<div class="tk-modal-overlay" id="tk-modal-overlay">
+    <div class="tk-modal">
+        <div class="tk-modal-head">
+            <h4 id="tk-modal-title"></h4>
+            <button type="button" class="tk-modal-close" id="tk-modal-close" aria-label="Cerrar">✕</button>
+        </div>
+        <div class="tk-modal-body" id="tk-modal-body"></div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var overlay = document.getElementById('tk-modal-overlay');
+    var titleEl = document.getElementById('tk-modal-title');
+    var bodyEl  = document.getElementById('tk-modal-body');
+    var urlBase = '{% url "tickets:heatmap_detalle" %}';
+
+    function esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function abrirModal(label, assigned, priority) {
+        titleEl.textContent = label;
+        bodyEl.innerHTML = '<p class="ticket-subtext">Cargando…</p>';
+        overlay.classList.add('on');
+
+        fetch(urlBase + '?assigned_to=' + encodeURIComponent(assigned) + '&priority=' + encodeURIComponent(priority))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var tickets = data.tickets || [];
+                if (!tickets.length) {
+                    bodyEl.innerHTML = '<p class="ticket-subtext">No hay tickets en este cruce.</p>';
+                    return;
+                }
+                bodyEl.innerHTML = tickets.map(function (t) {
+                    return '<a class="tk-modal-row" href="' + esc(t.url) + '">' +
+                        '<div class="tk-modal-row-main">' +
+                            '<span class="tk-modal-num">' + esc(t.ticketNumber) + '</span>' +
+                            '<div class="tk-modal-ttl">' + esc(t.title) + '</div>' +
+                        '</div>' +
+                        '<div class="tk-modal-meta">' + esc(t.area) + ' · ' + esc(t.status) + ' · ' + esc(t.createdAt) + '</div>' +
+                    '</a>';
+                }).join('');
+            })
+            .catch(function () {
+                bodyEl.innerHTML = '<p class="ticket-subtext">No se pudo cargar. Intenta de nuevo.</p>';
+            });
+    }
+
+    document.querySelectorAll('.tk-heat-cell').forEach(function (cell) {
+        cell.addEventListener('click', function () {
+            abrirModal(cell.dataset.label, cell.dataset.assigned, cell.dataset.priority);
+        });
+    });
+
+    document.getElementById('tk-modal-close').addEventListener('click', function () {
+        overlay.classList.remove('on');
+    });
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) overlay.classList.remove('on');
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') overlay.classList.remove('on');
+    });
+})();
+</script>
+
 {% endblock %}

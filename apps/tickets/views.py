@@ -9,7 +9,7 @@ from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import datetime, timedelta
 
-from .models import Ticket, TicketCategory, TicketComment, TicketStatusHistory, TicketStatusChoices
+from .models import Ticket, TicketCategory, TicketComment, TicketStatusHistory, TicketStatusChoices, TicketPriorityChoices
 from apps.core.models import Area
 from apps.core.permissions import (
     is_superadmin, is_area_admin, is_agent,
@@ -65,6 +65,27 @@ def _agentes_asignables_para(ticket, user):
         admin_qs = UserModel.objects.filter(pk=user.pk)
         agentes = (agentes | admin_qs).distinct()
     return agentes, puede_asignar
+
+
+# Verde → amarillo → naranja → rojo: la escala de "mapa de calor" de toda la
+# vida (semáforo de severidad), no los tonos de marca -- a propósito, para
+# que 0 tickets se lea como "tranquilo" y el máximo como "sobrecargado".
+_ESCALA_CALOR = [
+    (0.00, (34, 197, 94)),    # verde
+    (0.33, (250, 204, 21)),   # amarillo
+    (0.66, (249, 115, 22)),   # naranja
+    (1.00, (239, 68, 68)),    # rojo
+]
+
+
+def _color_mapa_calor(ratio: float) -> str:
+    ratio = max(0.0, min(1.0, ratio))
+    for (r0, c0), (r1, c1) in zip(_ESCALA_CALOR, _ESCALA_CALOR[1:]):
+        if ratio <= r1:
+            t = (ratio - r0) / (r1 - r0) if r1 > r0 else 0
+            rgb = tuple(round(c0[i] + (c1[i] - c0[i]) * t) for i in range(3))
+            return f'rgb({rgb[0]},{rgb[1]},{rgb[2]})'
+    return f'rgb({_ESCALA_CALOR[-1][1][0]},{_ESCALA_CALOR[-1][1][1]},{_ESCALA_CALOR[-1][1][2]})'
 
 
 def _notificar_ticket(ticket, tipo, titulo, mensaje, actor):
@@ -529,6 +550,47 @@ def reportesView(request):
         })
     carga_agentes.sort(key=lambda x: -x['asignados'])
 
+    # Mapa de calor asignado × prioridad -- solo para quien puede gestionar
+    # tickets (ver quién concentra qué tanta carga de cada severidad es una
+    # decisión de admin de área/superadmin, no de un usuario final).
+    heatmap = None
+    puede_ver_heatmap = is_superadmin(request.user) or is_area_admin(request.user)
+    if puede_ver_heatmap:
+        prioridades = list(TicketPriorityChoices.choices)  # [(baja,'Baja'), ...]
+        conteo = {}
+        for row in tickets.values('assignedTo_id', 'assignedTo__name', 'assignedTo__lastname', 'priority').annotate(n=Count('ticketId')):
+            clave = row['assignedTo_id']
+            conteo.setdefault(clave, {'nombre': (
+                f"{row['assignedTo__name']} {row['assignedTo__lastname']}".strip()
+                if row['assignedTo_id'] else 'Sin asignar'
+            ), 'celdas': {}})
+            conteo[clave]['celdas'][row['priority']] = row['n']
+
+        heatmap_max = 0
+        heatmap_rows = []
+        for clave, datos in conteo.items():
+            fila = {'nombre': datos['nombre'], 'asignado_id': clave or '', 'celdas': [], 'total': 0}
+            for val, _ in prioridades:
+                n = datos['celdas'].get(val, 0)
+                fila['celdas'].append({'prioridad': val, 'n': n})
+                fila['total'] += n
+                heatmap_max = max(heatmap_max, n)
+            heatmap_rows.append(fila)
+        # "Sin asignar" siempre al final, el resto por carga total descendente
+        heatmap_rows.sort(key=lambda f: (f['nombre'] == 'Sin asignar', -f['total']))
+
+        for fila in heatmap_rows:
+            for celda in fila['celdas']:
+                ratio = (celda['n'] / heatmap_max) if heatmap_max else 0
+                celda['color'] = _color_mapa_calor(ratio) if celda['n'] else 'var(--surface2)'
+                celda['texto_claro'] = ratio > 0.62
+
+        heatmap = {
+            'columnas': [label for _, label in prioridades],
+            'filas':    heatmap_rows,
+            'max':      heatmap_max,
+        }
+
     return render(request, 'tickets/reportes.html', {
         'total':                 total,
         'por_area':              por_area,
@@ -537,4 +599,39 @@ def reportesView(request):
         'pct_sin_asignar':       pct_sin_asignar,
         'reabiertos':            reabiertos,
         'carga_agentes':         carga_agentes,
+        'heatmap':               heatmap,
     })
+
+
+@login_required
+def heatmapDetalleView(request):
+    """JSON para el popup del mapa de calor: los tickets exactos detrás de
+    una celda (asignado × prioridad). Mismo alcance que reportesView -- no
+    es una puerta nueva a datos que este usuario no pudiera ver ya."""
+    from django.http import JsonResponse
+    from django.urls import reverse
+
+    if not (is_superadmin(request.user) or is_area_admin(request.user)):
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    priority = request.GET.get('priority', '')
+    assigned_to = request.GET.get('assigned_to', '')
+
+    tickets = _tickets_for_user(request.user)
+    if priority:
+        tickets = tickets.filter(priority=priority)
+    if assigned_to:
+        tickets = tickets.filter(assignedTo_id=assigned_to)
+    else:
+        tickets = tickets.filter(assignedTo__isnull=True)
+
+    data = [{
+        'ticketNumber': t.ticketNumber,
+        'title':        t.title,
+        'area':         t.area.areaName,
+        'status':       t.get_status_display(),
+        'createdAt':    t.createdAt.strftime('%d/%m/%Y'),
+        'url':          reverse('tickets:detail', args=[t.ticketId]),
+    } for t in tickets.select_related('area').order_by('-createdAt')]
+
+    return JsonResponse({'tickets': data})
