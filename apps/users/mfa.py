@@ -9,9 +9,10 @@ import random
 import string
 from datetime import datetime, timedelta
 
-from django.core.mail import send_mail
 from django.conf import settings
 from django.db import connection
+
+from apps.core.emails import TEMAS, render_shell, send_html_mail
 
 
 # ─── Helpers de BD (raw SQL porque la tabla es managed=False) ─────────────────
@@ -84,9 +85,9 @@ def send_mfa_code(user) -> bool:
     """
     code = _create_code(user.pk)
 
-    subject = 'Tu código de verificación — Heka'
-    message = (
-        f'Hola{" " + user.name if user.name else ""},\n\n'
+    saludo = f'Hola{" " + user.name if user.name else ""}'
+    plain_fallback = (
+        f'{saludo},\n\n'
         f'Tu código de verificación de Heka es:\n\n'
         f'    {code}\n\n'
         f'Este código es válido por 5 minutos.\n'
@@ -94,15 +95,22 @@ def send_mfa_code(user) -> bool:
         f'— Equipo Heka'
     )
 
+    html_body = render_shell(
+        eyebrow='Verificación en dos pasos',
+        titulo='Tu código de acceso',
+        intro_html=f'{saludo}, usa este código para completar tu inicio de sesión. Es válido por 5 minutos.',
+        detalle=[('Código', code)],
+        app_nombre='Tickets',
+        **TEMAS['azul'],
+    )
+
     try:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[user.email],
-            fail_silently=False,
+        return send_html_mail(
+            to=user.email,
+            subject='Tu código de verificación — Heka',
+            html_body=html_body,
+            plain_fallback=plain_fallback,
         )
-        return True
     except Exception as e:
         import traceback
         print('Error enviando correo:', e)

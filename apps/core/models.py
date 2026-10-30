@@ -87,8 +87,10 @@ class Notification(models.Model):
         if excluir_user:
             destinatarios = destinatarios.exclude(pk=excluir_user.pk)
 
+        destinatarios = list(destinatarios)
         cls.objects.bulk_create([
             cls(destinatario=u, tipo=tipo, titulo=titulo, mensaje=mensaje,
                 ticket_id=ticket.pk if ticket else None)
             for u in destinatarios
         ])
+        return destinatarios

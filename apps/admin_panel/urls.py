@@ -32,7 +32,4 @@ urlpatterns = [
 
     # Reportería
     path('reportes/',              views.reportesView,         name='reportes'),
-
-    # Debug (solo super admin — remover en producción)
-    path('debug/<int:pk>/',         views.debugPermissionsView, name='debug_permissions'),
 ]

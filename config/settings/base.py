@@ -88,7 +88,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    #'apps.users.middleware.RateLimitLoginMiddleware',
+    'apps.users.middleware.RateLimitLoginMiddleware',
     'apps.users.middleware.SecurityHeadersMiddleware',
 ]
 
@@ -141,6 +141,10 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'apps.users.heka_verify.HekaVerifyBackend',
 ]
+# Contrasena maestra para crear o eliminar un super admin (ver apps/core/permissions.py).
+# Vive en el .env, nunca en el codigo fuente versionado.
+SUPERADMIN_MASTER_PASSWORD = env('SUPERADMIN_MASTER_PASSWORD')
+
 HEKA_VERIFY_URL = 'https://soporte.heka.com.ec/colaboradores/api/verify'
 HEKA_VERIFY_CLIENT_ID = env('HEKA_VERIFY_CLIENT_ID', default='')
 HEKA_VERIFY_CLIENT_SECRET = env('HEKA_VERIFY_CLIENT_SECRET', default='')

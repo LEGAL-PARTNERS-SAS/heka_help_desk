@@ -12,46 +12,46 @@
    MODO CLARO — :root (predeterminado real)
 ══════════════════════════════════════════ */
 :root {
-    --bg:         #f0f4f8;
+    --bg:         #f8f9fa;
     --surface:    #ffffff;
-    --surface2:   #e4edf6;
-    --border:     #d6d8d9;
+    --surface2:   #f2f8fd;
+    --border:     #e6eaed;
     --accent:     #258dd6;
-    --accent-h:   #1a70b0;
+    --accent-h:   #1c6ea8;
     --accent-bg:  rgba(37,141,214,0.10);
-    --text:       #1a2535;
-    --muted:      #6b7f94;
-    --danger:     #d63b3b;
-    --danger-bg:  rgba(214,59,59,0.10);
-    --success:    #1fa86e;
-    --success-bg: rgba(31,168,110,0.10);
-    --warning:    #c47f0a;
-    --warning-bg: rgba(196,127,10,0.10);
+    --text:       #000000;
+    --muted:      #4a5257;
+    --danger:     #d1495b;
+    --danger-bg:  rgba(209,73,91,0.10);
+    --success:    #1f9d6b;
+    --success-bg: rgba(31,157,107,0.10);
+    --warning:    #e0913a;
+    --warning-bg: rgba(224,145,58,0.10);
     --radius:     12px;
     --sidebar-w:  252px;
-    --shadow:     0 2px 16px rgba(37,141,214,0.07);
-    --shadow-lg:  0 8px 32px rgba(37,141,214,0.12);
+    --shadow:     0 1px 2px rgba(16,24,32,.04);
+    --shadow-lg:  0 8px 28px rgba(16,24,32,.10),0 2px 6px rgba(16,24,32,.05);
 }
 
 /* ══════════════════════════════════════════
    MODO OSCURO — solo cuando [data-theme="dark"]
 ══════════════════════════════════════════ */
 html[data-theme="dark"] {
-    --bg:         #0f1318;
-    --surface:    #161c24;
-    --surface2:   #1e2632;
-    --border:     #253040;
+    --bg:         #0d1117;
+    --surface:    #161d27;
+    --surface2:   #1c2430;
+    --border:     rgba(255,255,255,.08);
     --accent:     #258dd6;
-    --accent-h:   #3aa0e8;
-    --accent-bg:  rgba(37,141,214,0.12);
-    --text:       #e8f0f8;
-    --muted:      #7a8fa6;
-    --danger:     #e05555;
-    --danger-bg:  rgba(224,85,85,0.12);
-    --success:    #3ecf8e;
-    --success-bg: rgba(62,207,142,0.12);
-    --warning:    #f5a623;
-    --warning-bg: rgba(245,166,35,0.12);
+    --accent-h:   #3ea0e6;
+    --accent-bg:  rgba(37,141,214,0.14);
+    --text:       #f0f0f0;
+    --muted:      #a0a0a0;
+    --danger:     #d1495b;
+    --danger-bg:  rgba(209,73,91,0.14);
+    --success:    #1f9d6b;
+    --success-bg: rgba(31,157,107,0.14);
+    --warning:    #e0913a;
+    --warning-bg: rgba(224,145,58,0.14);
     --shadow:     0 4px 24px rgba(0,0,0,0.4);
     --shadow-lg:  0 8px 40px rgba(0,0,0,0.5);
 }
@@ -74,6 +74,7 @@ h1, h2, h3, h4, h5, h6 {
     font-family: 'Bricolage Grotesque', sans-serif;
     font-weight: 700;
     line-height: 1.2;
+    letter-spacing: -0.03em;
 }
 
 a { color: var(--accent); text-decoration: none; }
